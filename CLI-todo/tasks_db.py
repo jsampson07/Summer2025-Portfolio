@@ -23,9 +23,9 @@ task info:
 class TaskDB:
     def __init__ (self, filename="tasks.json"):
         self.filename = filename
-        tasks_file = open(filename)
-        if not os.path.exists(tasks_file):
-            json.dump([], tasks_file)
+        if not os.path.exists(self.filename):
+            new_file = open(self.filename)
+            json.dump([], new_file)
     def load(self): #used to load information from the json file
         file = open(self.filename)
         json_data = json.load(file)
