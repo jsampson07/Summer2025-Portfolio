@@ -1,0 +1,1 @@
+This is where all the work for the CLI application is written. Source code can be found through (these files) and the data for the application is stored in (this file).
