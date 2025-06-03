@@ -79,3 +79,32 @@ class TaskDB:
                 print(f"Here is your task and its correspinding information:\n{task_info}")
         if not found_task:
             print(f"You do not have a {task_name} task.")
+    def update_task(self, task_name, new_name, description, due_date, completed, priority):
+        file_data = self.load()
+        for ind, task_info in enumerate(file_data):
+            tname = task_info["Task Name"]
+            if tname.lower() == task_name.lower():
+                #do the logic here if we found a task that matches
+
+                #if ANY of these fields are empty assume we want to take previously saved values
+                if not new_name:
+                    new_name = task_name
+                if not description:
+                    description = task_info["Description"]
+                if not due_date:
+                    due_date = task_info["Due Date"]
+                if not completed:
+                    completed = task_info["Completed"]
+                if not priority:
+                    priority = task_info["Priority"]
+                file_data[ind] = {"Task Name": new_name,
+                "Description": description,
+                "Due Date": due_date,
+                "Completed": completed,
+                "Priority": priority}
+                file = open(self.filename, "w")
+                json.dump(file_data, file, indent=2)
+                file.close()
+                print(f"Successfully updated your {task_name} task!")
+                return
+        print(f"{task_name} does not exist. Can only update a valid task.")
