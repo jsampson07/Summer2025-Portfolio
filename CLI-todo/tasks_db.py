@@ -1,16 +1,6 @@
 import json
 import os
-
-#I want to be able to:
-"""
-1) add tasks
-2) remove tasks
-3) update tasks
-4) look at my tasks (read the entire file)
-    i.e. readall()
-5) look at ONLY a specific task (read json file and then parse until find the task name)
-    i.e. readtask(TASK NAME)
-"""
+from datetime import datetime
 
 """
 task info:
@@ -20,6 +10,10 @@ task info:
     - completed (True or False) - boolean
     - priority - str (Low, Medium, High)
 """
+
+#note: datetime.strptime(str_to_convert, <format_of_date>) - string --> datetime object
+#      datetimeObject.strftime(<format_of_date>) - datetime --> string
+
 class TaskDB:
     def __init__ (self, filename="tasks.json"):
         self.filename = filename
@@ -40,7 +34,10 @@ class TaskDB:
             if tname.lower() == task_name.lower():
                 print(f"You already have {tname} as a task.")
                 return
+        
         #Logic to add task to DB
+        if isinstance(due_date, datetime): #if due_date is provided ensure convert to str (otherwise not supported JSON type)
+            due_date = due_date.strftime("%m-%d-%Y")
         task_to_add = {"Task Name": task_name, "Description": description, "Due Date": due_date, "Completed": completed, "Priority": priority}
         file_data.append(task_to_add)
         file = open(self.filename, "w")
@@ -66,7 +63,12 @@ class TaskDB:
             print(f"{task_name} does not exist. Could not remove.")
     def get_all_tasks(self):
         all_tasks = self.load()
-        print(f"Here are all your tasks:\n{all_tasks}")
+        print(f"Here are all your tasks...\n")
+        for task in all_tasks:
+            name = task["Task Name"]
+            print(f"{name}:")
+            for key,value in task.items():
+                print(f"\t{key}: {value}")
     def get_task(self, task_name):
         file_data = self.load() #we now have a list (type = list)
         #Logic to check if task already exists
@@ -76,7 +78,9 @@ class TaskDB:
             tname = task_info["Task Name"]
             if tname.lower() == task_name.lower():
                 found_task = True
-                print(f"Here is your task and its correspinding information:\n{task_info}")
+                print(f"{tname}:")
+                for key,value in task_info.items():
+                    print(f"\t{key}: {value}")
         if not found_task:
             print(f"You do not have a {task_name} task.")
     def update_task(self, task_name, new_name, description, due_date, completed, priority):
@@ -91,12 +95,14 @@ class TaskDB:
                     new_name = task_name
                 if not description:
                     description = task_info["Description"]
-                if not due_date:
+                if not due_date: #retrieve old value first
                     due_date = task_info["Due Date"]
                 if not completed:
                     completed = task_info["Completed"]
                 if not priority:
                     priority = task_info["Priority"]
+                if isinstance(due_date, datetime): #if it is a datetime object (NOT empty)
+                    due_date = due_date.strftime("%m-%d-%Y")
                 file_data[ind] = {"Task Name": new_name,
                 "Description": description,
                 "Due Date": due_date,
@@ -108,3 +114,9 @@ class TaskDB:
                 print(f"Successfully updated your {task_name} task!")
                 return
         print(f"{task_name} does not exist. Can only update a valid task.")
+    def remove_all(self):
+        file = open(self.filename, "w")
+        json.dump([], file)
+        file.close()
+        print("Removed all tasks.")
+
