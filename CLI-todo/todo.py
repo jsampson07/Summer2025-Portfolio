@@ -33,6 +33,16 @@ def main():
     remove_parser = subparsers.add_parser("remove", help="Remove a specified task")
     remove_parser.add_argument("task", type=str, help="Name of the task to remove")
 
+    #update subparser
+    update_parser = subparsers.add_parser("update", help="Update an existing task")
+    update_parser.add_argument("task", type=str, help="Name of task to update")
+    update_parser.add_argument("--taskname", type=str, help="new name")
+    update_parser.add_argument("--description", type=str, help="Add a description for the task (optional)")
+    update_parser.add_argument("--due_date", type=str, help="Put in a due date (optional)")
+    update_parser.add_argument("--completed", action="store_true", help="Completed or not? (True or False)")
+        #action keyword argument ==> "store_true" stores True if flag is present
+    update_parser.add_argument("--priority", type=str, help="Put 'low', 'medium', or 'high' priority for your task")
+
     args = parser.parse_args()
     #print(type(args))
     #args creates a Namespace object that has all attributes assigned to it for current iteration
@@ -46,6 +56,8 @@ def main():
             db.get_all_tasks()
     elif args.command == "remove":
         db.removetask(args.task)
+    elif args.command == "update":
+        db.update_task(args.task, args.taskname, args.description, args.due_date, args.completed, args.priority)
 
 if __name__ == "__main__":
     main()
