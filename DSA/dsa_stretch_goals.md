@@ -1,20 +1,20 @@
 # 🚀 Stretch Goals: Beyond the Core
 
 ## General
-- [ ] Use `cProfile` to benchmark your algorithms
-- [ ] Visualize your Trie or Heap using `graphviz` or `matplotlib`
+- [ ] Use `cProfile` to benchmark my algorithms
+- [ ] Visualize my Trie or Heap using `graphviz` or `matplotlib`
 
 ## OS Design
-- [ ] Implement your own memory allocator with best-fit/worst-fit logic
-- [ ] Extend Round-Robin to priority queue using your binary heap
+- [ ] Implement my own memory allocator with best-fit/worst-fit logic
+- [ ] Extend Round-Robin to priority queue using my binary heap
 
 ## Cybersecurity
 - [ ] Use DFS to trace privilege escalation paths on TryHackMe
 - [ ] Create a packet fragmentation script using bit-level manipulation
 
 ## Software Dev
-- [ ] Use your Trie to autocomplete search in Flask
-- [ ] Add a caching layer to your REST API using a hashmap
+- [ ] Use my Trie to autocomplete search in Flask
+- [ ] Add a caching layer to my REST API using a hashmap
 
 ## Extra DS/Algos
 - [ ] Implement a Skip List

@@ -12,7 +12,7 @@
 
 ## Week 2
 - [ ] Implement a FIFO queue and a circular queue
-- [ ] Use your queue in a round-robin simulation
+- [ ] Use my queue in a round-robin simulation
 - [ ] Implement quickselect to test against process run times
 
 ## Week 3
