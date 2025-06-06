@@ -40,18 +40,37 @@ class LinkedList:
                 return curr
             curr = curr.next
         return None
-    def reverse(self): #reverse the linked list
-        #iterate self.size-1 times
+    #examples to help understand reverse() conceptually
+    """ OLD IMPLEMENTATION
+    n1 -> n2 -> n3 -> n4 -> n5
+    iteration1: curr = n1
+        prev = n1, curr = n2, maintain = n3
+        n1 <- n2, prev = n2, curr = n3, HEAD = n2
+    iteration2: curr = n3
+        prev = n3, curr = n4, maintain = n5
+        n1 <- n2 
+    old implementation lost every other node in between (i.e. node3, node 6, node 9 but would "reverse" n1 and n2, n3 and n4, etc)
+    """
+    #
+    """ NEW IMPLEMENTATION (CORRECTED)
+    n1 -> n2 -> n3 -> n4 -> n5
+    GOAL: n1 <- n2 <- n3 <- n4 <- n5, where head = n5
+    iteration1: curr = n1
+        maintain = n2, curr.next = None (prev), prev = n1, curr = n2
+            maintain ==> keeps track of the next element in linkedlist so we do not lose info for the rest of the LL
+            prev ==> where to point the current node to (previous node), in first iteration = to None bc now will be the end of the list
+            curr ==> the node we want to redirect
+        n1 -> None
+    """
+    def reverse(self):
         curr = self.head
         prev = None
         while curr != None:
-            #prev = curr
-            #curr = curr.next
             maintain = curr.next
             curr.next = prev
-            prev = curr #added this line here
+            prev = curr
             curr = maintain
-        self.head = prev
+        self.head = prev #NOT curr, bc curr would be DONE after the last iteration (we are on the last node curr = last node, but then curr = ~curr.next (NONE))
 
     def delete_at_index(self, index):
         #practice using prev, curr ptrs
