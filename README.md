@@ -1,2 +1,2 @@
 # Summer-2025
-This repo is to showcase what I will/have done during my 2025 Summer. I wish to further explore OS design, cybersecurity fundamentals and practical applications, and delve into/further explore software development. I wish to showcase what a path to learning looks like and the progress I made along the way/the setbacks I encountered.
+This repo is to showcase what I will/have done during my 2025 Summer. I wish to further explore OS design, cybersecurity fundamentals and practical applications, and delve into/further explore software development. I wish to showcase what a path to learning looks like and the progress I made along the way/the setbacks I encountered. Each week adds a new tool and data structure implementation.
