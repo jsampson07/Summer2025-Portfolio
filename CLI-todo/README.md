@@ -1,1 +1,0 @@
-This is where all the work for the CLI application is written. Source code can be found in todo.py and tasks_db.py and the data for the CLI todo-list application is stored in tasks.json
