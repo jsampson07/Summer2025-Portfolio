@@ -1,0 +1,20 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+venv/
+env/
+ENV/
+
+# Logs and databases
+*.log
+*.sqlite3
+
+# Task files
+*.json
+
+# Backup files
+*~
