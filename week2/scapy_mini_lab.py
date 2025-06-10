@@ -88,7 +88,7 @@ def main():
 
     #Part 3: Passive Sniffing
         #this is how you eavesdrop on a network and all communications on the network
-    sniffed = sniff(count=100) #sniff returnns a Packet List
+    sniffed = sniff(count=10) #sniff returnns a Packet List
 
     #OR TO WRITE TO PCAP FILE FOR WIRESHARK LATER
     wrpcap("mini_lab.pcap", sniffed)
@@ -96,7 +96,7 @@ def main():
     #print(pcap_file)
     #for packets in sniffed:
         #packets.show()
-    #sniffed.summary()
+    sniffed.summary()
     
 
 if __name__ == "__main__":
