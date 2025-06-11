@@ -1,6 +1,4 @@
-from scapy.all import TCP, UDP, IP, ICMP, DNS, sr, sr1, srp, Ether, ARP, sniff
-import requests
-import time
+from scapy.all import IP, ICMP, sr
 import netifaces
 import ipaddress
 
