@@ -3,47 +3,15 @@ Below is a **11-week Summer 2025 roadmap** (May 28 – Aug 16) that balances **h
 
 ---
 
-## Week 1: June 3 – 9  
-**Goal:** Deepen DS&A
-
-
-4. **TryHackMe Recap: Linux CLI**  
-   - If you didn’t finish last week, complete **TryHackMe “Linux Fundamentals”** (4 hrs), focusing on shell scripting basics: loops, conditionals, and file tests (`[ -f file ]`). ===========> Introduction to Linux: Bash Scripting (Codecademy)
-
----
-
 ## Week 2: June 10 – 16  
 **Goal:** Learn Networking basics, Scapy, and implement trees/hash maps.
 
 1. **Networking Fundamentals**  
-   - Spend ~6 hrs on **TryHackMe “Networking”**: learn IPv4 addressing, TCP vs UDP, port numbers, and the three-way handshake.  
    - Practice: use `tcpdump` or `wireshark` to capture 10 ICMP pings on loopback:  
      ```
      sudo tcpdump -i lo icmp
      ping -c 3 127.0.0.1
-     ```
-
-2. **Scapy Basics (Mini-Lab)**  
-   - Install Scapy: `pip install scapy` (1 hr).  
-   - In a Python interpreter or small script (`scapy_basics.py`), run:
-     ```python
-     from scapy.all import sr1, ICMP, IP, TCP, sniff
-
-     # 1. ICMP ping
-     pkt = IP(dst="8.8.8.8")/ICMP()
-     resp = sr1(pkt, timeout=1)
-     resp.show()
-
-     # 2. TCP SYN scan port 80
-     ans = sr1(IP(dst="scanme.nmap.org")/TCP(dport=80, flags="S"), timeout=1)
-     print(ans.summary())
-
-     # 3. Sniff 5 packets
-     pkts = sniff(count=5, timeout=5)
-     pkts.summary()
-     ```
-   - **Deliverable:** two scripts:  
-     - `ping_sweeper.py` (ICMP sweep across a /24 network, print live hosts)  
+     ``` 
      - `banner_grabber.py` (TCP SYN+ACK to ports [22,80,443], print first bytes of response)
 
 3. **DS&A Focus: BST & Hash Map**  
@@ -83,7 +51,7 @@ Below is a **11-week Summer 2025 roadmap** (May 28 – Aug 16) that balances **h
 
 5. **CI & Linting (GitHub Actions)**  
    - Add a `.github/workflows/lint.yml` that runs `flake8` or `pylint` on `vuln_scanner.py` when you push or open a PR.  
-   - Fix any lint errors until your code is “lint-clean.”  
+   - Fix any lint errors until your code is “lint-clean.”
 
 ---
 
