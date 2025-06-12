@@ -6,29 +6,19 @@ def banner_grabber():
     my_network = "127.0.0.1"
     for port in [22, 8000, 443]:
         syn_pckt = IP(dst=my_network) / TCP(dport=port, flags="S")
+        print(syn_pckt[TCP].sport)
         sa_resp = sr1(syn_pckt, timeout=2)
         if not sa_resp or sa_resp[TCP].flags & 0x12 != 0x12:
             print(f"Port {port} closed or filtered; skipping")
             continue
         seq = sa_resp[TCP].ack
         ack = sa_resp[TCP].seq + 1
-        a_pckt = IP(dst=my_network) / TCP(dport=port, flags="A", seq=seq, ack=ack)
-    
-        #sniffer = AsyncSniffer(filter=f"tcp and src host {my_network} and src port {port}", iface="lo", count=1)
-        #sniffer.start()
-        #send(a_pckt)
-        #banner_req = sr1(IP(dst=my_network) / TCP(dport=port, seq=seq, ack=ack), timeout=2)
+        client_port = sa_resp[TCP].dport # we need this bc Scapy will picks a new random source port for each request if not specified
+        print(client_port)
+        a_pckt = IP(dst=my_network) / TCP(sport=client_port, dport=port,  seq=seq, ack=ack)
         
         banner_req = sr1(a_pckt, timeout=2)
-        #pckts = sniffer.join(timeout=5)
-        """ PAIRED WITH sniffer - pckts CODE
-        if pckts:
-            packet = pckts[0]
-            if packet.haslayer(Raw):
-                print("OH MY GOD WE DID IT !!!!!!")
-            if packet[TCP].payload:
-                print("WE ALSO DID IT!")
-        """
+        banner_req.show()
         if banner_req:
             print(f"Port {port}, Banner: {banner_req}")
         else:
