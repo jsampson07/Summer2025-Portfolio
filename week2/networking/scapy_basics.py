@@ -24,31 +24,6 @@ def create_connection():
     pcap_contents = ("test.pcap")
     talk = send(ack_pckt)
 
-    #sniff(filter=f"tcp and src host 23.0.162.200 and port 80", count=1) ==> used to check handshake=complete
-
-
-    #p = sr1(IP(dst = "8.8.8.8") / UDP() / DNS())
-        #here src is autofilled w/ my machines IP address
-            #dst is to specify where to deliver the UDP packet that contains the DNS query
-                #AND identifies WHICH recursive DNS server we are asking to do the "name-resolution" resolving
-        #UDP sport is random (from my pc)m dport = 53 for DNS protocol
-            #dport indicates what kind of service
-        #DNS autofills with "www.example.com" for "question"
-            #DNS asks ==> "please resolve www.example.com into an IPv4 address"
-
-    #pprint.pp(p[DNS].show()) #answer from the query???
-
-    #tcp = TCP(dport=80) #HTTP connection
-
-    #packet_to_send = sr1(IP(dst="8.8.4.4")/UDP()/DNS(), timeout=2)
-    #pprint.pp(packet_to_send[DNS].an) #answer from the query???
-
-    #right now this hangs because:
-    """
-    1. Layer-2 transmission NEEDS a dest MAC (sr1() is the thing that transmits)
-    2. ARP request times out as a result (when ARP lookup) and then broadbasts the msg
-        --> unlikely anyone on my network will answer
-    """
 def resolved_name(): # for specific
     packet = IP(dst="8.8.8.8") / UDP(dport=53) / DNS()
     response = sr1(packet)
