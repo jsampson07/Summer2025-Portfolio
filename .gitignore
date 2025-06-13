@@ -19,3 +19,10 @@ ENV/
 
 # Backup files
 *~
+
+#Certificate files
+*.pem
+
+#Note files
+*_notes.md
+*_NOTES.md
