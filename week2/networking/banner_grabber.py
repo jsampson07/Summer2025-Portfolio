@@ -1,7 +1,7 @@
 from scapy.all import IP, TCP, Raw, sr, sr1, sniff, send, AsyncSniffer, RandShort
 import pprint
 import netifaces
-
+#FAILED VERSION OF BANNER GRABBER USING SCAPY
 def banner_grabber():
     my_network = "scanme.nmap.org"
     for port in [22, 80, 443]:
@@ -27,11 +27,6 @@ def banner_grabber():
             print("WE HAVE IT!!!!")
         if banner_req[TCP].payload:
             print("WE HAVE A PAYLOAD!!!!!!!!")
-
-        #ans, unans = sr(a_pckt, timeout=2)
-        #for send, rec in ans:
-            #if rec.haslayer(Raw):
-                #print("YES!")
 
 if __name__ == "__main__":
     banner_grabber()
