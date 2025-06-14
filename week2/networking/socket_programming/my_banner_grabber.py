@@ -21,8 +21,7 @@ def banner_grabber():
                             print(f"++ {HOST}:{port} -> {final_banner}")
                             continue
                         else:
-                            print(f"AT LEAST WE MADE IT IN HERE !!!!")
-                            print(f"There was no banner sent from Host: {HOST}, Port: {port}")
+                            print(f"-- There was no banner sent from Host: {HOST}, Port: {port}")
                             continue
                 #because HTTP servers do NOT send data until send a valid req...
                 elif port == 8000:
@@ -39,11 +38,11 @@ def banner_grabber():
                     """
                     print(f"++ {HOST}:{port} -> {final_banner}")
                 else:
-                    print(f"There was no banner sent from Host: {HOST}, Port: {port}")
+                    print(f"-- There was no banner sent from Host: {HOST}, Port: {port}")
         except (socket.timeout, ConnectionRefusedError):
             print(f"{HOST}:{port} is closed or unreachable")
         except Exception as e:
-            print(f"[-] {HOST}:{port} → error: {e}")
+            print(f"{HOST}:{port} → error: {e}")
 
 if __name__ == "__main__":
     banner_grabber()
