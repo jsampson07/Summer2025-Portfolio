@@ -4,7 +4,7 @@ import ssl
 def banner_grabber():
     #- `banner_grabber.py` (TCP SYN+ACK to ports [22,80,443], print first bytes of response)
     HOST = "127.0.0.1"
-    for port in [22, 8000, 443]:
+    for port in [22, 80, 443]:
         try:
             with socket.create_connection((HOST, port)) as s: #makes me "my" client-side socket
                 s.settimeout(3) #set timeout for all recv and send calls to 3 seconds
