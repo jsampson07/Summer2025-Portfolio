@@ -20,8 +20,31 @@ class HashMap:
             while curr:
                 if curr.data.key == key:
                     curr.data.value = val
+                    return
                 curr = curr.next
             self.map[index].insert_front(entry)
+            self.size+=1
+        if float(self.size/self.capacity) > 0.6:
+            #resize the array
+            self._resize()
+    def _resize(self):
+        new_capacity = self.capacity*2 #for simplicity
+        self.capacity = new_capacity
+        new_backing_array = [LinkedList() for _ in range(new_capacity)]
+        for LL in self.map:
+            curr = LL.head
+            if curr is None:
+                continue
+            while curr:
+                new_index = self._hashfunc(curr.data.key)
+                entry = HashMapEntry(curr.data.key, curr.data.value)
+                new_backing_array[new_index].insert_front(entry)
+                curr = curr.next
+        self.map = new_backing_array
+    def _resize_put(new_array, key, val, new_index):
+        entry = HashMapEntry(key,val)
+        new_array[new_index].insert_front(entry)
+
     def remove(self, key):
         pair_index = self._hashfunc(key)
         if self.map[pair_index].is_Empty() is None:
@@ -53,7 +76,18 @@ class HashMap:
                 return curr.data.value
             curr = curr.next
         #return f"No key,value pair with {key} as key"
-
+    def containsKey(self, key):
+        index = self._hashfunc(key)
+        LL = self.map[index]
+        if LL.head is None:
+            return False
+        else:
+            curr = LL.head
+            while curr:
+                if curr.data.key == key:
+                    return True
+                curr = curr.next
+            return False
 
     def debug_str(self):
         lines = []
