@@ -3,20 +3,7 @@ Below is a **11-week Summer 2025 roadmap** (May 28 – Aug 16) that balances **h
 
 ---
 
-## Week 2: June 10 – 16  
-**Goal:** Learn Networking basics, Scapy, and implement trees/hash maps.
-
-1. **Networking Fundamentals**  
-   - Practice: use `tcpdump` or `wireshark` to capture 10 ICMP pings on loopback:  
-     ```
-     sudo tcpdump -i lo icmp
-     ping -c 3 127.0.0.1
-     ``` 
-     - `banner_grabber.py` (TCP SYN+ACK to ports [22,80,443], print first bytes of response)
-
-3. **DS&A Focus: BST & Hash Map**  
-   - Implement a **Binary Search Tree** (C or Python) with `insert(key, value)`, `search(key)`, and `delete(key)`.  
-   - Implement a **basic hash map** (open addressing or chaining) in C or Python (`put()`, `get()`, `remove()`).  
+3. **DS&A Focus: BST & Hash Map**
    - **Mini-exercise:** load `/usr/share/dict/words` into your hash map and do O(1) lookups (simulate a wordlist check).
 
 ---
