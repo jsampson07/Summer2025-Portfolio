@@ -34,7 +34,6 @@ def ping_sweeper():
         for send, reply in ans:
             print(f"Echo reply from host: {reply[IP].src}")
 
-    
 def main():
     ping_sweeper()
 
