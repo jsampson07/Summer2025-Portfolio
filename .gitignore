@@ -35,3 +35,5 @@ capture_lo_icmp.sh
 tomorrow.md
 final_banner_grabber.py
 summer_2025_roadmap.md
+week3/*.py
+week3/NOTES.md
