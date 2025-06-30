@@ -8,6 +8,7 @@ import socket
 import ipaddress
 import argparse
 import json
+import sys
 import re
 import logging
 from typing import List, Dict, Tuple, Any, Match
@@ -26,7 +27,7 @@ def ping_sweeper(subnet: str, timeout: float) -> Tuple[List[str], List[str]]:
     for host_ip in network.hosts():  # All possible host IP addr on the network
         try:
             echo = IP(dst=str(host_ip)) / ICMP()
-            reply = sr1(echo, retry=3, timeout=timeout, verbose=False)
+            reply = sr1(echo, timeout=timeout, verbose=False)
             if reply:
                 live_hosts.append(str(host_ip))
             else:
@@ -47,7 +48,7 @@ def tcp_fallback(hosts: List[str],
     for host in hosts:
         for port in ports:
             try:
-                with socket.create_connection((host, port)):
+                with socket.create_connection((host, port), timeout=timeout):
                     if host not in success:
                         success[host] = [port]
                     else:
@@ -61,15 +62,15 @@ def tcp_fallback(hosts: List[str],
     return success
 
 
-def finger_printing(hosts: Dict[str, List[str]],
+def finger_printing(hosts: Dict[str, List[int]],
                     timeout: float) -> List[Dict[str, Any]]:
     fp_result = []
     for host, ports in hosts.items():
         banners = {}
         for port in ports:
             if port == 80:
-                response = requests.head(f"http://{host}:80", timeout=timeout)
                 try:
+                    response = requests.head(f"http://{host}:80", timeout=timeout)
                     response.raise_for_status()
                     server_banner = response.headers.get("Server")
                     if not server_banner:
@@ -84,8 +85,8 @@ def finger_printing(hosts: Dict[str, List[str]],
                 except Exception:
                     log.exception("Unexpected error occurred during HTTP HEAD request")
             if port == 443:
-                response = requests.head(f"https://{host}:443", timeout=timeout)
                 try:
+                    response = requests.head(f"https://{host}:443", timeout=timeout)
                     response.raise_for_status()
                     server_banner = response.headers.get("Server")
                     if not server_banner:
@@ -101,19 +102,19 @@ def finger_printing(hosts: Dict[str, List[str]],
                     log.exception("Unexpected error occurred during HTTPS HEAD request")
             # for SSH (port 22), open a raw TCP socket, send a newline, and read the banner
             if port == 22:
-                with socket.create_connection((host, port), timeout=timeout) as s:
-                    try:
+                try:
+                    with socket.create_connection((host, port), timeout=timeout) as s:
                         s.send(b"\n")
                         response = s.recv(1024)  # bytes object
                         decode_resp = response.decode("utf-8").strip()
                         banners[port] = decode_resp
-                    except ConnectionRefusedError as e:
-                        log.error("Connection could not be established with %s:%d: %s",
+                except ConnectionRefusedError as e:
+                    log.error("Connection could not be established with %s:%d: %s",
                                   host, port, e)
-                    except socket.timeout as e:
-                        log.error("Socket timeout: %s", e)
-                    except Exception:
-                        log.exception("Unexpected error occurred during SSH communication")
+                except socket.timeout as e:
+                    log.error("Socket timeout: %s", e)
+                except Exception:
+                    log.exception("Unexpected error occurred during SSH communication")
         fp_result.append({"ip": host, "ports": ports, "banners": banners})
     return fp_result
 
@@ -187,4 +188,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        sys.exit(1)
