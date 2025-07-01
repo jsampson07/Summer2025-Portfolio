@@ -136,17 +136,16 @@ async def main():
     #Find ICMP responders
     icmp_alive, dead = async_ping_sweep(network, args.timeout)
     log.info("Number of ICMP alive hosts: %d", len(icmp_alive))
-    #See those that create successful TCP connection (on alive)
+    #See those that create successful TCP connection (on 'alive')
     icmp_alive_tcp = await asyncio.create_task(async_gather_tcp(icmp_alive, ports, args.timeout, args.concurrent))
     open_ports = {}
-    count = 0
     for h,p,tf in icmp_alive_tcp:
-        count = count + 1 if tf else count
         if tf:
             if h in open_ports:
                 open_ports[h].append(p)
             else:
                 open_ports[h] = [p]
+    #See those that create successful TCP connection (on 'dead')
     tcp_only = await asyncio.create_task(async_gather_tcp(dead, ports, args.timeout, args.concurrent))
     for h,p,tf in tcp_only:
         count = count + 1 if tf else count
@@ -156,11 +155,9 @@ async def main():
             else:
                 open_ports[h] = [p]
 
-    #input must be Dict[str, List[int]]
     fingerprint_result = await asyncio.create_task(async_gather_finger_print(open_ports,
                                                                              args.timeout,
                                                                              args.concurrent))
-    #Returns a List[(host, port, banner, BOOLEAN)]
     banners = {}
     for h,p,b,tf in fingerprint_result:
         if tf:
