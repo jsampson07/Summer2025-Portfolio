@@ -11,6 +11,7 @@ import json
 import sys
 import re
 import logging
+import time
 from typing import List, Dict, Tuple, Any, Match
 import requests
 from requests import HTTPError
@@ -70,7 +71,7 @@ def finger_printing(hosts: Dict[str, List[int]],
         for port in ports:
             if port == 80:
                 try:
-                    response = requests.head(f"http://{host}:80", timeout=timeout)
+                    response = requests.head(f"http://{host}:{port}", timeout=timeout)
                     response.raise_for_status()
                     server_banner = response.headers.get("Server")
                     if not server_banner:
@@ -86,7 +87,7 @@ def finger_printing(hosts: Dict[str, List[int]],
                     log.exception("Unexpected error occurred during HTTP HEAD request")
             if port == 443:
                 try:
-                    response = requests.head(f"https://{host}:443", timeout=timeout)
+                    response = requests.head(f"https://{host}:{port}", timeout=timeout)
                     response.raise_for_status()
                     server_banner = response.headers.get("Server")
                     if not server_banner:
@@ -138,6 +139,7 @@ def setup_logging(verbosity: int) -> None:
 
 
 def main():
+    start = time.perf_counter()
     parser = argparse.ArgumentParser(prog="port_scanner.py",
                                      description="used to 1) ICMP-sweep a subnet, " \
                                      "2) TCP-connect scan any unresponsive hosts, " \
@@ -185,6 +187,8 @@ def main():
     pattern = re.compile(r'\[\s+([^\[\]]*?)\s+\]', re.DOTALL)
     pretty_format = pattern.sub(inline_list, json_format)
     print(pretty_format)
+    end = time.perf_counter() - start
+    print(f"Finished in {round(end,2)} seconds.")
 
 
 if __name__ == "__main__":
