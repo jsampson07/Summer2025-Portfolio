@@ -45,7 +45,6 @@ async def async_tcp_scan(host: str, port: int, timeout: float, sem: asyncio.Sema
 
 async def async_finger_printing(host: str, port: int, timeout: float, sem: asyncio.Semaphore) -> Tuple[Optional[str], bool]:
     """Return , each containing relevant info to the finger printing service result"""
-    #hosts:
     async with sem:
         if port in (80,443):
             try:
@@ -72,14 +71,16 @@ async def async_finger_printing(host: str, port: int, timeout: float, sem: async
                 return (host, port, banner, True) if banner else (host, port, None, False)
             except Exception:
                 log.error("Port 22 finger printing error occurred")
-                return None, False
-
+                return host, port, None, False
 
 
 async def async_gather_finger_print(hosts: Dict[str, List[int]], timeout: float, max_conc: int) -> List[Tuple[Optional[str], bool]]:
     sem = asyncio.Semaphore(max_conc)
+    # Implement a "greedy" way of fingerprinting -> fingerprint hosts w/ most ports open first
+    dict_list = hosts.items()
+    host_port_list = sorted(dict_list, key=lambda pair:len(pair[1]), reverse=True)
     tasks = [asyncio.create_task(async_finger_printing(host, port, timeout, sem))
-                                 for host, ports in hosts.items() for port in ports]
+                                 for host, ports in host_port_list for port in ports]
     results = await asyncio.gather(*(tasks))
     return results
 
@@ -112,7 +113,8 @@ async def main():
     parser.add_argument("-s", "--subnet", required=True, type=str,
                         help="Subnet to scan i.e. 127.0.0.1/24")
     parser.add_argument("-p", "--port", default="22,80,443", type=str,
-                        help="Comma-separated ports used for TCP fallback: i.e. 22,80,443")
+                        help="Comma-separated ports used for TCP fallback: i.e. 22,80,443." \
+                        "ONLY ports 22, 80, and 443 are supported as of now")
     parser.add_argument("-t", "--timeout", default=1.0, type=float,
                         help="Used to override default timeout value")
     parser.add_argument("-v", "--verbose", action="count", default=0,
@@ -133,10 +135,10 @@ async def main():
 
     log.info("Scanning subnet: %s", network)
     ports = [int(p) for p in args.port.split(",")]
-    #Find ICMP responders
+    # Find ICMP responders
     icmp_alive, dead = async_ping_sweep(network, args.timeout)
     log.info("Number of ICMP alive hosts: %d", len(icmp_alive))
-    #See those that create successful TCP connection (on 'alive')
+    # See those that create successful TCP connection (on 'alive')
     icmp_alive_tcp = await asyncio.create_task(async_gather_tcp(icmp_alive, ports, args.timeout, args.concurrent))
     open_ports = {}
     for h,p,tf in icmp_alive_tcp:
@@ -145,7 +147,7 @@ async def main():
                 open_ports[h].append(p)
             else:
                 open_ports[h] = [p]
-    #See those that create successful TCP connection (on 'dead')
+    # See those that create successful TCP connection (on 'dead')
     tcp_only = await asyncio.create_task(async_gather_tcp(dead, ports, args.timeout, args.concurrent))
     for h,p,tf in tcp_only:
         count = count + 1 if tf else count
@@ -176,7 +178,8 @@ async def main():
         "hosts": final_hosts,
         "elapsed_time": round(end, 2)
     }
-    print(json.dumps(final, indent=2))
+    fd = open("reports.json", 'w')
+    json.dump(final, fd, indent=2)  # Print final result into json file
 
 
 if __name__ == "__main__":
