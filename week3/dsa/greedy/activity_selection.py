@@ -7,11 +7,9 @@ Given 'n' activities with start times in start[] and finish times in finish[]
 FIND the MAXIMUM number of activities someone can perform with NO overlap
 
 """
+import argparse
+
 def activity_selection(start, finish):
-    if len(start) != len(finish):
-        raise Exception("Please verify you have a start and end time for every activity")
-    if len(start) == len(finish) == 0:
-        raise Exception("Please make sure you have activities to select from")
     # Let's create a list of tuples
     act_list = []
     for i in range(len(start)):
@@ -30,8 +28,22 @@ def activity_selection(start, finish):
 
 
 def main():
-    s = [1,3,0,5,8,10]
-    f = [2,4,6,7,9,10]
+    parser = argparse.ArgumentParser(prog="Efficient Activities",
+                                     description="Given start and finish times of activities" \
+                                     "know the most efficient way to complete as many activities as possible")
+    
+    parser.add_argument("-s", "--start", type=str, required=True,
+                        help="List of start times separated by commas i.e. 1,3,2,6,4,10")
+    parser.add_argument("-f", "--finish", type=str, required=True,
+                        help="List of finish times separated by commas i.e. 1,3,2,6,4,10")
+    args = parser.parse_args()
+    
+    start_times = (args.start).split(",")
+    s = [int(time) for time in start_times]
+    finish_times = (args.finish).split(",")
+    f = [int(time) for time in finish_times]
+    if len(s) != len(f):
+        raise Exception("Please verify you have a start and end time for every activity")
 
     acts, num_acts = activity_selection(s, f)
 
