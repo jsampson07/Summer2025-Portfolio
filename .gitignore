@@ -34,9 +34,10 @@ live_capture.py
 capture_lo_icmp.sh
 tomorrow.md
 final_banner_grabber.py
-summer_2025_roadmap.md
 week3/*.py
 week3/*.md
 week3/dsa/graphs/GRAPHS.md
 week3/dsa/*.md
 TrackingForMe/APP_IDEA_NOTES.md
+*_roadmap.md
+CVE_scanner_addition.md
