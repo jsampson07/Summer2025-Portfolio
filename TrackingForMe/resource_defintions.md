@@ -19,6 +19,7 @@
         + I WANT food items to be saved to a user's account and can look up a food easily and add it to i.e. a meal
     3. Meal (collection of foods???)
         - id (lets include it so its just easier to read when making requests)
+        - name (can name a meal to make recognizable)
         - total_calories
         - total_protein
         - total_carbs

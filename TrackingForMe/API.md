@@ -1,42 +1,4 @@
-3-5 "must-have" rsrcs
-    1. User
-        - id (integer primary key)
-        - username
-        - password (hashed)
-        - email
-        - age (int)
-        - weight (float)
-        - goal (enum: bulk, cut, maintenance, casual)
-    2. Food (either stand-alone or makes up a meal w/ other foods)
-        - id (lets include it so its just easier to read when making requests)
-        - name (name can uniquely identify the food NO need for id)
-        - calories
-        - protein
-        - carbs
-        - fats
-        restrictions:
-            + ALL numeric vals MUST be ints (NO FLOATS!!! makes no sense)
-        + I WANT food items to be saved to a user's account and can look up a food easily and add it to i.e. a meal
-    3. Meal (collection of foods???)
-        - id (lets include it so its just easier to read when making requests)
-        - total_calories
-        - total_protein
-        - total_carbs
-        - total_fats
-        side note: *totals* ==> computed (derived attribute) NOT stored
-        - saved (if the meal is saved so as to be displayed on the "Main Page 2 (Meal Catalog)" pg)
-        a. foods: array of {food_name} w/ drill down to each of their respective nutritional info
-            their information
-    4. Summary
-        - user_id
-        - date
-        - mode: enum(daily, weekly, monthly)
-        - macro_breadown
-            + BASED on the *mode* attribute ==> compute via aggregations (???)
-        - weight_breakdown
-            + BASED on the *mode* attribute ==> compute via all previous weights and date timeline and create a plot/linear progression line??
-
-**API endpoints design**
+**API endpointegers design**
 
 
 /api/users/* 
@@ -58,7 +20,7 @@
         calories: ...,
         protein: ...,
         carbs: ...,
-        fats: ...
+        fat: ...
     }
 - GET /api/foods --> retrieval a list of all foods the user has
     + support query parameters like ?sort=merge OR ?name={food_name}
@@ -92,3 +54,220 @@
 # we do not want users to be able to "upload" any new information to this page, it should all be derived from other pages of the application
 - GET /api/summary
     # get the summary for this particular user
+    # use ?date={date}&mode={mode} to display SummaryResponse
+
+**JSON schema for "client requests" and "server responses"**
+*User*
+UserInput:
+{
+    "type": "object",
+    "properties": {
+        "username": {"type": "string"},
+        "password": {"type": "string"},
+        "email": {"type": "string", "format": "email"},
+        "age": {"type": "integer"},
+        "weight": {"type": "number"},
+        "goal": {
+            "type": "string",
+            "enum": ["casual", "cut", "bulk", "maintain"]
+        }
+    },
+    "required": ["username", "password", "email"]
+}
+PartialUserInput:
+{
+    "type": "object",
+    "properties": {
+        "username": {"type": "string"},
+        "password": {"type": "string"},
+        "email": {"type": "string", "format": "email"},
+        "age": {"type": "integer"},
+        "weight": {"type": "number"},
+        "goal": {
+            "type": "string",
+            "enum": ["casual", "cut", "bulk", "maintain"]
+        }
+    }
+}
+UserResponse:
+{
+    "type": "object",
+    "properties": {
+        "id": {"type": "integer"},
+        "username": {"type": "string"},
+        "email": {"type": "string"},
+        "age": {"type": "integer"},
+        "weight": {"type": "number"},
+        "goal": {
+            "type": "string",
+            "enum": ["casual", "cut", "bulk", "maintain"]
+        },
+        "created_at": {"type": "string", "format": "date-time"},
+        "updated_at": {"type": "string", "format": "date-time"}
+    },
+    "required": ["id", "username", "email"]
+}
+
+*Food*
+FoodInput:
+{
+    "type": "object",
+    "properties": {
+        "name": {"type": "string"},
+        "serving_size": {"type": "number"},
+        "serving_unit": {"type": "string", "enum": ["g", "oz", "mL", "cup", "unit"]},
+        "calories": {"type": "integer"},
+        "protein": {"type": "integer"},
+        "carbs": {"type": "integer"},
+        "fat": {"type": "integer"}
+    },
+    "required": ["name", "serving_size", "serving_unit", "calories"]
+}
+PartialFoodInput:
+{
+    "type": "object",
+    "properties": {
+        "name": {"type": "string"},
+        "serving_size": {"type": "number"},
+        "serving_unit": {"type": "string", "enum": ["g", "oz", "mL", "cup", "unit"]},
+        "calories": {"type": "integer"},
+        "protein": {"type": "integer"},
+        "carbs": {"type": "integer"},
+        "fat": {"type": "integer"}
+    }
+}
+FoodResponse:
+{
+    "type": "object",
+    "properties": {
+        "id": {"type": "integer"},
+        "name": {"type": "string"},
+        "serving_size": {"type": "number"},
+        "serving_unit": {"type": "string", "enum": ["g", "oz", "mL", "cup", "unit"]},
+        "calories": {"type": "integer"},
+        "protein": {"type": "integer"},
+        "carbs": {"type": "integer"},
+        "fat": {"type": "integer"},
+        "created_at": {"type": "string", "format": "date-time"},
+        "updated_at": {"type": "string", "format": "date-time"}
+    },
+    "required": ["id", "name", "serving_size", "serving_unit", "calories"]
+}
+
+*Meal*
+MealInput:
+{
+    "type": "object",
+    "properties": {
+        "name": {"type": "string"},
+        "saved": {"type": "boolean"},
+        "foods": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "food_id": {"type": "integer"},
+                    "quantity": {"type": "number"}
+                },
+                "required": ["food_id", "quantity"]
+            }
+        }
+    },
+    "required": ["name", "foods"]
+}
+PartialMealInput:
+{
+    "type": "object",
+    "properties": {
+        "name": {"type": "string"},
+        "saved": {"type": "boolean"},
+        "foods": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "food_id": {"type": "integer"},
+                    "quantity": {"type": "number"}
+                },
+                "required": ["food_id", "quantity"]
+            }
+        }
+    }
+}
+MealResponse:
+{
+    "type": "object",
+    "properties": {
+        "id": {"type": "integer"},
+        "name": {"type": "string"},
+        "total_calories": {"type": "integer"},
+        "total_protein": {"type": "integer"},
+        "total_carbs": {"type": "integer"},
+        "total_fat": {"type": "integer"},
+        "saved": {"type": "boolean"},
+        "foods": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "quantity": {"type": "number"}
+                    "food": {
+                        "type": "object",
+                        "properties": {
+                            "id": {"type": "integer"},
+                            "serving_size": {"type": "number"},
+                            "serving_unit": {"type": "string"},
+                            "name": {"type": "string"},
+                            "calories": {"type": "integer"},
+                            "protein": {"type": "integer"},
+                            "carbs": {"type": "integer"},
+                            "fat": {"type": "integer"}
+                        },
+                        "required": ["id", "name", "serving_size", "serving_unit", "calories"]
+                    }
+                },
+                "required": ["quantityl, "food"]
+            }
+        },
+        "created_at": {"type": "string", "format": "date-time"},
+        "updated_at": {"type": "string", "format": "date-time"}
+    },
+    "required": ["id", "name", "total_calories", "saved", "foods"]
+}
+
+*Summary*
+SummaryResponse:
+{
+    "type": "object",
+    "properties": {
+        "date": {"type": "string", "format": "date"},
+        "mode": {
+            "type": "string",
+            "enum": ["daily", "weekly", "monthly"]
+        },
+        "macro_breakdown": {
+            "type": "object",
+            "properties": {
+                "avg_calories": {"type": "number"},
+                "avg_protein": {"type": "number"},
+                "avg_carbs": {"type": "number"},
+                "avg_fat": {"type": "number"}
+            },
+            "required": ["avg_calories"]
+        },
+        "weight_breakdown": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "date": {"type": "string", "format": "date"},
+                    "weight": {"type": "number"}
+                },
+                "required": ["weight"]
+            }
+        },
+        "created_at": {"type": "string", "format": "date-time"},
+        "updated_at": {"type": "string", "format": "date-time"}
+    },
+    "required": ["date", "mode", "macro_breakdown"]
+}
