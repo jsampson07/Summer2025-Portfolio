@@ -51,10 +51,10 @@
 
 /api/summary/*
 
-# we do not want users to be able to "upload" any new information to this page, it should all be derived from other pages of the application
+*we do not want users to be able to "upload" any new information to this page, it should all be derived from other pages of the application*
 - GET /api/summary
-    # get the summary for this particular user
-    # use ?date={date}&mode={mode} to display SummaryResponse
+    *get the summary for this particular user*
+    *use ?date={date}&mode={mode} to display SummaryResponse*
 
 **JSON schema for "client requests" and "server responses"**
 *User*
