@@ -271,3 +271,13 @@ SummaryResponse:
     },
     "required": ["date", "mode", "macro_breakdown"]
 }
+
+*Daily_Log*
+DailyLogInput:
+{
+    # HAAHHAHAHAHAHAHA
+}
+DailyLogResponse:
+{
+    # HAAHAHAAHAHAHAHAAA
+}
