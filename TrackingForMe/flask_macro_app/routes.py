@@ -12,6 +12,12 @@ def get_foods():
     
     if sort_by and hasattr(Food, sort_by):  # Do not assume that the attribute will exist
         query = query.order_by(getattr(Food, sort_by))
+    elif sort_by and (not hasattr(Food, sort_by)):
+        error_payload = {
+            "status": "error",
+            "message": f"'{sort_by}' is not a valid field to sort by"
+        }
+        return jsonify(error_payload), 400
     # Either default sort or sort by some parameter
     foods = db.session.scalars(query).all()
     new_foods_list = []
