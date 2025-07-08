@@ -32,9 +32,9 @@ class User(db.Model):
                                                 unique=True, nullable=False)
     password_hash: so.Mapped[str] = so.mapped_column(sa.String(128), unique=True, nullable=False)  #ONLY NULLABLE FOR TESTING PURPOSES
     email: so.Mapped[str] = so.mapped_column(sa.String(128), index=True, unique=True, nullable=False)
-    age: so.Mapped[int] = so.mapped_column()
-    weight: so.Mapped[float] = so.mapped_column()
-    goal: so.Mapped[GoalEnum] = so.mapped_column(sa.Enum(GoalEnum))  #NULLABLE ONLY FOR TESTING PURPOSES
+    age: so.Mapped[int] = so.mapped_column(nullable=True)
+    weight: so.Mapped[float] = so.mapped_column(nullable=True)
+    goal: so.Mapped[GoalEnum] = so.mapped_column(sa.Enum(GoalEnum), nullable=True)  #NULLABLE ONLY FOR TESTING PURPOSES
 
     def __repr__(self):
         return f"<User {self.username}>"
@@ -44,9 +44,9 @@ class Food(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     name: so.Mapped[str] = so.mapped_column(sa.String(64), index=True, unique=True, nullable=False)
     calories: so.Mapped[int] = so.mapped_column(nullable=False)
-    protein: so.Mapped[int] = so.mapped_column()
-    carbs: so.Mapped[int] = so.mapped_column()
-    fat: so.Mapped[int] = so.mapped_column()
+    protein: so.Mapped[int] = so.mapped_column(nullable=True)
+    carbs: so.Mapped[int] = so.mapped_column(nullable=True)
+    fat: so.Mapped[int] = so.mapped_column(nullable=True)
     serving_size: so.Mapped[float] = so.mapped_column(nullable=False)  # Must be provided, even if just 1 "unit"
     serving_unit: so.Mapped[ServingUnit] = so.mapped_column(sa.Enum(ServingUnit), nullable=False)
 
