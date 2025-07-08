@@ -39,7 +39,31 @@ def get_foods():
 def create_user():
     print("Creating user...")
 
+    #REMEMBER --> EVERYTHING IS SENT VIA JSON FORMAT inside the crafted requests and response bodies
+    user_data = request.get_json()
+    print(f"receieved: {user_data}")
+    username = user_data["username"]
+    password_pt = user_data["password"]  # NOTE: have not implemented hashing yet!!!!
+    email = user_data["email"]
+    age = user_data.get("age")
+    weight = user_data.get("weight")
+    goal = user_data.get("goal")
 
+    new_user = User(
+        username=username,
+        password_hash=password_pt,
+        email=email,
+        age=age,
+        weight=weight,
+        goal=goal
+    )
+
+    try:
+        db.session.add(new_user)
+        db.session.commit()
+        #return jsonify()
+    except:
+        return jsonify({"error_message": "Could not add you as a user. Please try again."}), 400
     
     print("Successfully created user!")
 
