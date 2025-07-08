@@ -1,17 +1,11 @@
 # Define routes and handlers for the endpoints
-from flask_macro_app import app
+from flask_macro_app import app, db
+from flask_macro_app.models import User, Food
 from flask import jsonify, request
 from typing import List, Dict, Any
-FOODS = [
-    {"id": 1, "name": "Chicken", "calories": 200},
-    {"id": 2, "name": "Whole Wheat Bread", "calories": 70},
-    {"id": 4, "name": "Greek Yogurt", "calories": 170},
-    {"id": 5, "name": "Egg Whites", "calories": 50},
-    {"id": 3, "name": "Flavored-Pistachios", "calories": 100},
-    {"id": 6, "name": "Cashews", "calories": 80}
-]
+import sqlalchemy as sa
 
-def merge_sort(arr: List[Dict[str, Any]], sort_by):
+def merge_sort(arr: List[Dict[str, Any]]):
     """Used to sort 'foods' by calories; later add feature to sort by desired filter"""
     # Base cases
     if len(arr) == 1:
@@ -43,14 +37,36 @@ def merge_sort(arr: List[Dict[str, Any]], sort_by):
 
 @app.route('/api/foods')
 def get_foods():
+    query = sa.select(Food)
+    foods = db.session.scalars(query).all()
     to_sort = request.args.get("sort")  # .args is a MultiDict of all query params i.e.
-    sort_by = request.args.get("sort_by")  # Perhaps what to sort_by i.e. calories, protein, etc
+    #sort_by = request.args.get("sort_by")  # Perhaps what to sort_by i.e. calories, protein, etc
         #http://www.example.com/api/foods?sort=merge -> to_sort = {"sort": "merge"}["sort"] == "merge"
+    new_foods_list = []
+    for food in foods:
+        new_foods_list.append({
+            "id": food.id,
+            "name": food.name,
+            "calories": food.calories,
+            "protein": food.protein,
+            "carbs": food.carbs,
+            "fat": food.fat,
+            "serving_size": food.serving_size,
+            "serving_unit": str(food.serving_unit)
+        })
     if to_sort == "merge":
-        merge_sort(FOODS, sort_by)
-        return jsonify(FOODS)
+        merge_sort(new_foods_list)
+        return jsonify(new_foods_list)
         # Sort given the FOODS list for now
-    return jsonify(FOODS) #wraps JSON output within Flask "Response" object -> sets Content-Type header auto to applicatin/json
+    return jsonify(new_foods_list) #wraps JSON output within Flask "Response" object -> sets Content-Type header auto to applicatin/json
+
+@app.route('/api/register', methods=['POST'])
+def create_user():
+    print("Creating user...")
+
+    
+
+    print("Successfully created user!")
 
 @app.route('/')
 def test():
