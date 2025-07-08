@@ -44,7 +44,7 @@
         + BASED on the *mode* attribute ==> compute via all previous weights and date timeline and create a plot/linear progression line??
 5. Daily Log
     - id - uniquely identify each log entry
-    - **log_date** ==> when the meal or food was consumed (so that we can use for summaries, how much did i eat today, this week, etc)
+    - **log_date** ==> when the meal or food was consumed (so that we can use for summaries, how much did i eat today, this week, etc) ==> **DATETIME**
     - user_id
     - food_id (optional b/c both food and meal can be added to log)
     - meal_id (optional b/c both food and meal can be added to log)

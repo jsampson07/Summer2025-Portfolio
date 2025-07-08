@@ -10,33 +10,53 @@ class GoalEnum(enum.Enum):
     MAINTAIN = "maintain"
     CASUAL = "casual"
 
+class ServingUnit(enum.Enum):
+    GRAMS = "g"
+    OUNCE = "oz"
+    ML = "ml"
+    CUP = "cup"
+    UNIT = "unit"
+
 class User(db.Model):
     # so.Mapped[int]/so.Mapped[float] - defines the type of the column (required)
     # so.Mapped[Optional[str]] - defines type of the column should there be a value (not required)
-    __tablename__ = "users"  # __tablename__ for each class defines custom table name inside of database
+    __tablename__ = "Users"  # __tablename__ for each class defines custom table name inside of database
 
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     username: so.Mapped[str] = so.mapped_column(sa.String(64), index=True,
-                                                unique=True)
-    password_hash: so.Mapped[str] = so.mapped_column(sa.String(128), unique=True)
+                                                unique=True, nullable=False)
+    password_hash: so.Mapped[str] = so.mapped_column(sa.String(128), unique=True, nullable=False)  #ONLY NULLABLE FOR TESTING PURPOSES
     email: so.Mapped[str] = so.mapped_column(sa.String(128), index=True, unique=True, nullable=False)
     age: so.Mapped[int] = so.mapped_column()
     weight: so.Mapped[float] = so.mapped_column()
-    goal: so.Mapped[GoalEnum] = so.mapped_column(sa.Enum(GoalEnum))
+    goal: so.Mapped[GoalEnum] = so.mapped_column(sa.Enum(GoalEnum))  #NULLABLE ONLY FOR TESTING PURPOSES
 
     def __repr__(self):
         return f"<User {self.username}>"
     
 class Food(db.Model):
-    __tablename__ = "foods"
+    __tablename__ = "Foods"
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     name: so.Mapped[str] = so.mapped_column(sa.String(64), index=True, unique=True, nullable=False)
     calories: so.Mapped[int] = so.mapped_column(nullable=False)
     protein: so.Mapped[int] = so.mapped_column()
     carbs: so.Mapped[int] = so.mapped_column()
     fat: so.Mapped[int] = so.mapped_column()
+    serving_size: so.Mapped[float] = so.mapped_column(nullable=False)  # Must be provided, even if just 1 "unit"
+    serving_unit: so.Mapped[ServingUnit] = so.mapped_column(sa.Enum(ServingUnit), nullable=False)
 
-    user_id: so.Mapped[Optional[int]] = so.mapped_column(sa.ForeignKey("users.id"), nullable=True)
+    user_id: so.Mapped[Optional[int]] = so.mapped_column(sa.ForeignKey("Users.id"), nullable=True)  # If food is in pre-existing catalog, no user id, else: userid of creator
 
     def __repr__(self):
         return f"<Food {self.name}>"
+    
+class Meal(db.Model):
+    __tablename__ = "Meals"
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    name: so.Mapped[str] = so.mapped_column(sa.String(128), unique=True, index=True, nullable=False)
+    saved: so.Mapped[bool] = so.mapped_column(nullable=True)
+
+    user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey("Users.id"), nullable=False)  # Meal must be created by a user
+
+    def __repr__(self):
+        return f"<Meal {self.name}>"

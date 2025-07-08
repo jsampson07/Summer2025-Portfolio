@@ -214,7 +214,7 @@ MealResponse:
                     "food": {
                         "type": "object",
                         "properties": {
-                            "id": {"type": "integer"},
+                            "food_id": {"type": "integer"},
                             "serving_size": {"type": "number"},
                             "serving_unit": {"type": "string"},
                             "name": {"type": "string"},
@@ -226,7 +226,7 @@ MealResponse:
                         "required": ["id", "name", "serving_size", "serving_unit", "calories"]
                     }
                 },
-                "required": ["quantityl, "food"]
+                "required": ["quantity, "food"]
             }
         },
         "created_at": {"type": "string", "format": "date-time"},
@@ -275,9 +275,51 @@ SummaryResponse:
 *Daily_Log*
 DailyLogInput:
 {
-    # HAAHHAHAHAHAHAHA
+    "type": "object",
+    "properties": {
+        "log_date": {"type": "string", "format": "date-time"},
+        "quantity": {"type": "number"},
+        "food_id": {"type": "integer},
+        "meal_id": {"type": "integer"},
+    },
+    "required": ["log_date", "quantity"],
+    "oneOf": [
+        {"required": ["food_id"]},
+        {"required": ["meal_id"]}
+    ]
 }
 DailyLogResponse:
 {
-    # HAAHAHAAHAHAHAHAAA
+    "type": "object",
+    "properties": {
+        "date": {"type": "string", "format": "date"},
+        "daily_totals": {
+            "type": "object",
+            "properties": {
+                "calories": {"type": "integer"},
+                "protein": {"type": "integer"},
+                "carbs": {"type": "integer"},
+                "fat": {"type": "integer"}
+            }
+        }
+        "log_entries": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "log_id": {"type": "integer"},
+                    "food_meal_name": {"type": "string"},
+                    "quantity": {"type": "integer"},
+                    "calories": {"type": "integer"},
+                    "protein": {"type": "integer"},
+                    "carbs": {"type": "integer"},
+                    "fat": {"type": "integer}
+                },
+                "required": ["log_id", "food_meal_name", "calories"]
+            }
+        }
+        "created_at": {"type": "date", "format": "date"},
+        "updated_at": {"type": "date", "format": "date"}
+    },
+    "required": ["date", "daily_totals", "log_entries", "created_at"]
 }
