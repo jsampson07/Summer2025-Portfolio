@@ -11,4 +11,7 @@ db = SQLAlchemy(app)
 # Create the migration engine instance to track db changes in application
 migrate = Migrate(app, db)
 
+from flask_macro_app.seed import seed_database, query_seed
+app.cli.add_command(seed_database)
+app.cli.add_command(query_seed)
 from flask_macro_app import routes, models
