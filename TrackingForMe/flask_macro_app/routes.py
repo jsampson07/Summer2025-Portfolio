@@ -4,6 +4,7 @@ from flask_macro_app.models import User, Food
 from flask import jsonify, request, Flask
 from typing import List, Dict, Any
 import sqlalchemy as sa
+from sa import or_, and_
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 
@@ -78,7 +79,7 @@ def create_user():
             "weight": new_user.weight,
             "goal": new_user.goal,
             "created_at": formatted
-        })
+        }), 200
     except IntegrityError as e:
         db.session.rollback()
         return jsonify({"error_message": "Username or email already exists"}), 400
@@ -86,25 +87,22 @@ def create_user():
         db.session.rollback()
         return jsonify({"error_message": "Could not add you as a user. Please try again."}), 500
 
+
 #Get all foods for the logged-in user
 @app.route('/api/foods', methods=['GET', 'POST'])
 @jwt_required()
 def get_all_foods():
     current_user_id = get_jwt_identity()
 
-    if request.method == 'GET':
+    if request.method == 'GET':  # Retrieve list of all foods that user can access
 
-        query = sa.select(Food)
+        query = sa.select(Food).where(or_(Food.user_id == current_user_id, Food.user_id.is_(None)))
         sort_by = request.args.get("sort")
         
-        if sort_by and hasattr(Food, sort_by):  # Do not assume that the attribute will exist
+        if sort_by in ["calories", "protein", "carbs", "fat"]:  # Do not assume that the attribute will exist
             query = query.order_by(getattr(Food, sort_by))
         elif sort_by and (not hasattr(Food, sort_by)):
-            error_payload = {
-                "status": "error",
-                "message": f"'{sort_by}' is not a valid field to sort by"
-            }
-            return jsonify(error_payload), 400
+            return jsonify({"error_message": f"'{sort_by}' is not a valid field to sort by"}), 400
         # Either default sort or sort by some parameter
         foods = db.session.scalars(query).all()
         new_foods_list = []
@@ -120,12 +118,127 @@ def get_all_foods():
                 "serving_unit": str(food.serving_unit)
             })
             # Sort given the FOODS list for now
-        return jsonify(new_foods_list) #wraps JSON output within Flask "Response" object -> sets Content-Type header auto to applicatin/json
+        return jsonify(new_foods_list), 200 #wraps JSON output within Flask "Response" object -> sets Content-Type header auto to applicatin/json
+
+    if request.method == 'POST':  # Create a new food item for user
+        user_data = request.get_json()
+        name = user_data.get("name")
+        calories = user_data.get("calories")
+        protein = user_data.get("protein")
+        carbs = user_data.get("carbs")
+        fat = user_data.get("fat")
+        serving_size = user_data.get("serving_size")
+        serving_unit = user_data.get("serving_unit")
+
+        food_query = sa.Select(Food).where(Food.name == name)
+        if db.session.scalar(food_query):
+            return jsonify({"error_message": f"'{name}' already exists"}), 400
+            # Perhaps now give option to edit the food item instead
+
+        new_food = Food(
+            name=name,
+            calories=calories,
+            protein=protein,
+            carbs=carbs,
+            fat=fat,
+            serving_size=serving_size,
+            serving_unit=serving_unit
+        )
+
+        try:
+            db.session.add(new_food)
+            db.session.commit()
+            date_time = datetime.datetime.now()
+            formatted = date_time.isoformat()
+            print("Successfully created food")
+            return jsonify({
+                "id": new_food.id,
+                "name": new_food.name,
+                "calories": new_food.calories,
+                "protein": new_food.protein,
+                "carbs": new_food.carbs,
+                "fat": new_food.fat,
+                "serving_size": new_food.serving_size,
+                "serving_unit": new_food.serving_unit,
+                "created_at": formatted
+            }), 200
+        except Exception:
+            db.session.rollback()
+            return jsonify({"error_message": "Unexpected error occurred"}), 500
+
 
 @app.route('/api/foods/<int:food_id>', methods=['GET', 'PATCH', 'DELETE'])
 @jwt_required()
 def get_one_food(food_id):
     current_user_id = get_jwt_identity()
+    food_item = db.session.get(Food, food_id)  # Use across all methods
+    if not food_item:
+        return jsonify({"error_message": "Food not found"}), 404
+
+    if request.method == 'GET':  # Get specified food item
+        permissions = (food_item.user_id == current_user_id
+                       or food_item.user_id is None)
+        if not permissions:
+            return jsonify({"error_message": "Permission denied"}), 403
+
+        food_info = {
+            "id": food_item.id,
+            "name": food_item.name,
+            "calories": food_item.calories,
+            "protein": food_item.protein,
+            "carbs": food_item.carbs,
+            "fat": food_item.fat,
+            "serving_size": food_item.serving_size,
+            "serving_unit": str(food_item.serving_unit)
+        }
+        return jsonify(food_info), 200
+
+    if request.method == 'DELETE':  # Delete food item from user's database
+        # Only want to be able to delete foods that have Food.userid == current_user_id
+        #query = sa.Select(Food).where(Food.id == food_id and Food.user_id == current_user_id)
+        #food_to_delete = db.session.scalar(query)
+        if food_item.user_id == current_user_id:  # We have permission
+            try:
+                db.session.delete(food_item)
+                db.session.commit()
+                return '', 204
+            except Exception:
+                db.session.rollback()
+                return jsonify({"error_message": "Unexpected error occurred"}), 500
+        else:
+            return jsonify({"error_message": "Permission denied"}), 403
+        
+    if request.method == 'PATCH':  # Edit fields of a food item that corresponds to user
+        # Update a food entry with newly provided user information (ONLY for Food.user_id == current_user_id)
+        if food_item.user_id == current_user_id:
+            try:
+                user_data = request.get_json()
+                food_item.name = user_data.get("name", food_item.name)
+                food_item.calories = user_data.get("calories", food_item.calories)
+                food_item.protein = user_data.get("protein", food_item.protein)
+                food_item.carbs = user_data.get("carbs", food_item.carbs)
+                food_item.fat = user_data.get("fat", food_item.fat)
+                food_item.serving_size = user_data.get("serving_size", food_item.serving_size)
+                food_item.serving_unit = user_data.get("serving_unit", food_item.serving_unit)
+
+                db.session.commit()
+
+                return jsonify({
+                    "id": food_id,
+                    "name": food_item.name,
+                    "calories": food_item.calories,
+                    "protein": food_item.protein,
+                    "carbs": food_item.carbs,
+                    "fat": food_item.fat,
+                    "serving_size": food_item.serving_size,
+                    "serving_unit": str(food_item.serving_unit)
+                }), 200
+            except Exception:
+                db.session.rollback()
+                return jsonify({"error_message": "Unexpected error occurred"}), 500
+        else:
+            return jsonify({"error_message": "Permission denied"}), 403
+
 
 @app.route('/api/profile', methods=["PATCH"])
 def update_user():
