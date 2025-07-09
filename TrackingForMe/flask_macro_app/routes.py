@@ -4,6 +4,7 @@ from flask_macro_app.models import User, Food
 from flask import jsonify, request
 from typing import List, Dict, Any
 import sqlalchemy as sa
+from datetime import datetime
 
 @app.route('/api/foods')
 def get_foods():
@@ -43,7 +44,7 @@ def create_user():
     user_data = request.get_json()
     print(f"receieved: {user_data}")
     username = user_data["username"]
-    password_pt = user_data["password"]  # NOTE: have not implemented hashing yet!!!!
+    password = user_data["password"]  # NOTE: have not implemented hashing yet!!!!
     email = user_data["email"]
     age = user_data.get("age")
     weight = user_data.get("weight")
@@ -51,7 +52,7 @@ def create_user():
 
     new_user = User(
         username=username,
-        password_hash=password_pt,
+        password=password,
         email=email,
         age=age,
         weight=weight,
@@ -61,11 +62,31 @@ def create_user():
     try:
         db.session.add(new_user)
         db.session.commit()
-        #return jsonify()
+        date_time = datetime.datetime.now()
+        formatted = date_time.isoformat()
+        print("Successfully created user!")
+        return jsonify({
+            "id": new_user.id,
+            "username": new_user.username,
+            "email": new_user.email,
+            "age": new_user.age,
+            "weight": new_user.weight,
+            "goal": new_user.goal,
+            "created_at": formatted
+        })
     except:
         return jsonify({"error_message": "Could not add you as a user. Please try again."}), 400
-    
-    print("Successfully created user!")
+@app.route('/api/profile', methods=["PATCH"])
+def update_user():
+    user_data = request.get_json()
+    print(f"receieved: {user_data}")
+    username = user_data["username"]
+    password = user_data["password"]  # NOTE: have not implemented hashing yet!!!!
+    email = user_data["email"]
+    age = user_data.get("age")
+    weight = user_data.get("weight")
+    goal = user_data.get("goal")
+    return
 
 @app.route('/')
 def test():

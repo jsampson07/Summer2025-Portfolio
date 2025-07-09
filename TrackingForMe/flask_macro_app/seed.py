@@ -31,9 +31,9 @@ def seed_database():
     db.drop_all()
     db.create_all()
 
-    user1 = User(username="jsamp7", password_hash="wasd123", email="jsamp7@example.com",
+    user1 = User(username="jsamp7", password="wasd123", email="jsamp7@example.com",
                  goal=GoalEnum.BULK)
-    user2 = User(username="testdummy", password_hash="securepass", email="dummy@example.com",
+    user2 = User(username="testdummy", password="securepass", email="dummy@example.com",
                  goal=GoalEnum.CASUAL)
     users = [user1, user2]
     db.session.add_all(users)

@@ -30,7 +30,7 @@ class User(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     username: so.Mapped[str] = so.mapped_column(sa.String(64), index=True,
                                                 unique=True, nullable=False)
-    password_hash: so.Mapped[str] = so.mapped_column(sa.String(128), unique=True, nullable=False)  #ONLY NULLABLE FOR TESTING PURPOSES
+    password: so.Mapped[str] = so.mapped_column(sa.String(128), unique=False, nullable=False)  #ONLY NULLABLE FOR TESTING PURPOSES
     email: so.Mapped[str] = so.mapped_column(sa.String(128), index=True, unique=True, nullable=False)
     age: so.Mapped[int] = so.mapped_column(nullable=True)
     weight: so.Mapped[float] = so.mapped_column(nullable=True)
