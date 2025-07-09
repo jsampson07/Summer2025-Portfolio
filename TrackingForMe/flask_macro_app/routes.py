@@ -122,6 +122,10 @@ def get_all_foods():
 
     if request.method == 'POST':  # Create a new food item for user
         user_data = request.get_json()
+        if (not user_data) or (not any(key in user_data for key in
+                                       ['name', 'calories', 'serving_size', 'serving_unit'])):
+            return jsonify({"error_message": "Missing required fields: name, calories"
+            "serving_size, serving_unit"}), 400
         name = user_data.get("name")
         calories = user_data.get("calories")
         protein = user_data.get("protein")
@@ -130,9 +134,9 @@ def get_all_foods():
         serving_size = user_data.get("serving_size")
         serving_unit = user_data.get("serving_unit")
 
-        food_query = sa.Select(Food).where(Food.name == name)
+        food_query = sa.Select(Food).where(and_(Food.name == name, Food.user_id == current_user_id))
         if db.session.scalar(food_query):
-            return jsonify({"error_message": f"'{name}' already exists"}), 400
+            return jsonify({"error_message": f"'{name}' already exists"}), 409
             # Perhaps now give option to edit the food item instead
 
         new_food = Food(
@@ -142,7 +146,8 @@ def get_all_foods():
             carbs=carbs,
             fat=fat,
             serving_size=serving_size,
-            serving_unit=serving_unit
+            serving_unit=serving_unit,
+            user_id=current_user_id
         )
 
         try:
@@ -160,8 +165,9 @@ def get_all_foods():
                 "fat": new_food.fat,
                 "serving_size": new_food.serving_size,
                 "serving_unit": new_food.serving_unit,
+                "user_id": new_food.user_id,
                 "created_at": formatted
-            }), 200
+            }), 201
         except Exception:
             db.session.rollback()
             return jsonify({"error_message": "Unexpected error occurred"}), 500
