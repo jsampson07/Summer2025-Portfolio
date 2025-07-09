@@ -52,7 +52,7 @@ def create_user():
 
     new_user = User(
         username=username,
-        password=password,
+        password=User.set_password(password),
         email=email,
         age=age,
         weight=weight,

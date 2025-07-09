@@ -4,6 +4,7 @@ from flask_macro_app import db
 import sqlalchemy as sa  # Used for fundamental building blocks for the database schema i.e. defining data types
 import sqlalchemy.orm as so  # Used for functions and types that are part of the ORM's mapping proces (mapping objects)
 import enum
+from werkzeug.security import generate_password_hash, check_password_hash
 
 class GoalEnum(enum.Enum):
     BULK = "bulk"
@@ -35,6 +36,12 @@ class User(db.Model):
     age: so.Mapped[int] = so.mapped_column(nullable=True)
     weight: so.Mapped[float] = so.mapped_column(nullable=True)
     goal: so.Mapped[GoalEnum] = so.mapped_column(sa.Enum(GoalEnum), nullable=True)  #NULLABLE ONLY FOR TESTING PURPOSES
+
+    def set_password(self, password):
+        self.password = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password, password)
 
     def __repr__(self):
         return f"<User {self.username}>"
