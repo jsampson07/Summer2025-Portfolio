@@ -29,6 +29,7 @@
 - PATCH /api/foods/{food_id} --> edit particular info of a food (protein, calories, etc)
     + i.e. { protein: 40 }
 - DELETE /api/foods/{food_id} --> remove a food from user's "catalog"
+    #CAN ONLY REMOVE FOODS THAT USER HAS ADDED !!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 /api/meals/*
