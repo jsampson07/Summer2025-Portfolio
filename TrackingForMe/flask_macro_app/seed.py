@@ -71,10 +71,27 @@ def query_seed():
     users = db.session.scalars(user_query).all()
     print(f"Users: {users}")
 
+    # Remove bad entry !!!
+    bad_entry = db.session.get(Food, 6)
+    if bad_entry:
+        db.session.delete(bad_entry)
+        db.session.commit()
+
     food_query = sa.select(Food)
     foods = db.session.scalars(food_query).all()
     for food in foods:
-        print(f"Food: {food.id}, Name: {food.name}, User_Owner: {food.user_id}")
+        #print(f"Food: {food.id}, Name: {food.name}, User_Owner: {food.user_id}")
+        print({
+            "id": food.id,
+            "name": food.name,
+            "calories": food.calories,
+            "protein": food.protein,
+            "carbs": food.carbs,
+            "fat": food.fat,
+            "serving_size": food.serving_size,
+            "serving_unit": food.serving_unit.value,
+            "user_owner": food.user_id
+        })
 
     meal_query = sa.select(Meal)
     meals = db.session.scalars(meal_query).all()

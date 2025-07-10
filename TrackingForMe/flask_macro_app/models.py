@@ -1,10 +1,12 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Literal
 from flask_macro_app import db
 import sqlalchemy as sa  # Used for fundamental building blocks for the database schema i.e. defining data types
 import sqlalchemy.orm as so  # Used for functions and types that are part of the ORM's mapping proces (mapping objects)
 import enum
 from werkzeug.security import generate_password_hash, check_password_hash
+
+from pydantic import BaseModel, ConfigDict, Field, EmailStr
 
 class GoalEnum(enum.Enum):
     BULK = "bulk"
@@ -22,6 +24,18 @@ class ServingUnit(enum.Enum):
 meal_items = db.Table("meal_items", db.Column("meal_id", db.Integer, db.ForeignKey("Meals.id"), primary_key=True),
                     db.Column("food_id", db.Integer, db.ForeignKey("Foods.id"), primary_key=True),
                     db.Column("quantity", db.Numeric(10,2)))
+
+class RegisterInput(BaseModel):
+    username: str = Field(..., min_length=6, max_length=64)
+    password: str = Field(..., min_length=4)  # FOR TESTING ONLY !!! IN production = 14
+    email: EmailStr = Field(..., max_length = 128)
+    age: Optional[int] = Field(default=None, ge=0)
+    weight: Optional[float] = Field(default=None, ge=0)
+    goal: Optional[GoalEnum] = None
+
+class LoginInput(BaseModel):
+    username: str = Field(..., min_length=6, max_length=64)
+    password: str = Field(..., min_length=4)
 
 class User(db.Model):
     # so.Mapped[int]/so.Mapped[float] - defines the type of the column (required)
@@ -45,6 +59,15 @@ class User(db.Model):
 
     def __repr__(self):
         return f"<User {self.username}>"
+    
+class FoodCreateEdit(BaseModel):
+    name: str = Field(..., min_length=2, max_length=64)
+    calories: int = Field(..., ge=0)
+    protein: Optional[int] = Field(default=0, ge=0)
+    carbs: Optional[int] = Field(default=0, ge=0)
+    fat: Optional[int] = Field(default=0, ge=0)
+    serving_size: int = Field(..., gt=0)
+    serving_unit: ServingUnit = Field(...)
     
 class Food(db.Model):
     __tablename__ = "Foods"

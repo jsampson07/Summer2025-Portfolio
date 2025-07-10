@@ -1,33 +1,49 @@
 # Define routes and handlers for the endpoints
 from flask_macro_app import app, db
-from flask_macro_app.models import User, Food, ServingUnit, GoalEnum
+from flask_macro_app.models import User, Food, ServingUnit, GoalEnum, RegisterInput, LoginInput, FoodCreateEdit
 from flask import jsonify, request, Flask
 from typing import List, Dict, Any
 import sqlalchemy as sa
 from sqlalchemy import or_, and_
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.exc import IntegrityError
 
 from flask_jwt_extended import create_access_token
 from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import jwt_required
 
+import logging
+from logging.handlers import RotatingFileHandler
+import os
+
+from pydantic import ValidationError
+
+from flask_macro_app.serialize import serialize_user, serialize_food, serialize_make_food
+
+if not os.path.exists('logs'):
+    os.mkdir('logs')
+
+file_handler = RotatingFileHandler('logs/app.log', maxBytes=10240, backupCount=10)
+file_handler.setFormatter(logging.Formatter(
+    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+))
+file_handler.setLevel(logging.INFO)
+
+app.logger.addHandler(file_handler)
+app.logger.setLevel(logging.INFO)
+app.logger.info("Running application...")
+
 
 @app.route('/api/login', methods=['POST'])
 def login():
     # After a successful login, this route should return a JWT (JSON Web Token). Once that's working,
     # you should use JWTs to protect your existing /api/foods route and any new routes you build.
-    """
-    Format: {
-        "username": ..., (OPTIONAL)
-        "password": ..., (REQUIRED)
-    }
-    """
-    user_data = request.get_json()
-    if (not user_data) or (not all(key in user_data for key in ['username', 'password'])):
-        return jsonify({"error_message": "Missing required fields: username, password"}), 400
-    username = user_data.get("username", None)
-    password = user_data.get("password")
+    try:
+        user_data = LoginInput(**request.get_json())
+    except ValidationError as e:
+        return jsonify({"error_message": e.errors()}), 400
+    username = user_data.username
+    password = user_data.password
     user_lookup = db.session.scalar(sa.Select(User).where(User.username == username))
     if (not user_lookup) or (not user_lookup.check_password(password)):
         return jsonify({"error_message": "Invalid username or password"}), 401
@@ -36,18 +52,20 @@ def login():
 
 @app.route('/api/register', methods=['POST'])
 def register():
-    user_data = request.get_json()
-    if (not user_data) or (not all(key in user_data for key in ['username', 'password', 'email'])):
-        return jsonify({"error_message": "Missing required fields: username, password, email"}), 400
+    try:
+        user_data = RegisterInput(**request.get_json())
+    except ValidationError as e:
+        return jsonify({"error_message": e.errors()}), 400
     print("Creating user...")
 
     #REMEMBER --> EVERYTHING IS SENT VIA JSON FORMAT inside the crafted requests and response bodies
-    username = user_data["username"]
-    password = user_data["password"]  # NOTE: have not implemented hashing yet!!!!
-    email = user_data["email"]
-    age = user_data.get("age", None)
-    weight = user_data.get("weight", None)
-    goal = user_data.get("goal", None)
+    username = user_data.username
+    password = user_data.password  # NOTE: have not implemented hashing yet!!!!
+    email_front_end = user_data.email
+    email = email_front_end.lower()
+    age = user_data.age
+    weight = user_data.weight
+    goal = user_data.goal
 
     user_query = sa.Select(User).where(User.username == username)
     email_query = sa.Select(User).where(User.email == email)
@@ -68,19 +86,8 @@ def register():
     try:
         db.session.add(new_user)
         db.session.commit()
-        print("WE HAVE MADE IT HERE !!!!!!!!!!!")
-        date_time = datetime.now()
-        formatted = date_time.isoformat()
-        print("Successfully created user!")
-        return jsonify({
-            "id": new_user.id,
-            "username": new_user.username,
-            "email": new_user.email,
-            "age": new_user.age,
-            "weight": new_user.weight,
-            "goal": new_user.goal,
-            "created_at": formatted
-        }), 200
+        date_time = datetime.now(timezone.utc).isoformat()  # Avoids timezone issues
+        return jsonify(serialize_user(new_user, date_time, email_front_end)), 201
     except IntegrityError as e:
         db.session.rollback()
         return jsonify({"error_message": "Username or email already exists"}), 400
@@ -107,40 +114,24 @@ def get_all_foods():
             return jsonify({"error_message": f"'{sort_by}' is not a valid field to sort by"}), 400
         # Either default sort or sort by some parameter
         foods = db.session.scalars(query).all()
-        new_foods_list = []
-        for food in foods:
-            new_foods_list.append({
-                "id": food.id,
-                "name": food.name,
-                "calories": food.calories,
-                "protein": food.protein,
-                "carbs": food.carbs,
-                "fat": food.fat,
-                "serving_size": food.serving_size,
-                "serving_unit": str(food.serving_unit)
-            })
-            # Sort given the FOODS list for now
-        return jsonify(new_foods_list), 200 #wraps JSON output within Flask "Response" object -> sets Content-Type header auto to applicatin/json
+        return jsonify([serialize_food(food) for food in foods]), 200
 
     if request.method == 'POST':  # Create a new food item for user
-        user_data = request.get_json()
-        if (not user_data) or (not all(key in user_data for key in
-                                       ['name', 'calories', 'serving_size', 'serving_unit'])):
-            return jsonify({"error_message": "Missing required fields: name, calories, "
-            "serving_size, serving_unit"}), 400
-        name = user_data.get("name")
-        calories = user_data.get("calories")
-        protein = user_data.get("protein")
-        carbs = user_data.get("carbs")
-        fat = user_data.get("fat")
-        serving_size = user_data.get("serving_size")
-        serving_unit = user_data.get("serving_unit")
-
         try:
-            serving_unit_enum = ServingUnit(serving_unit.lower())  # calls by value
-        except ValueError:
-            return jsonify({"error_message": f"'{serving_unit}' is an invalid serving unit"}), 400
+            user_data = FoodCreateEdit(**request.get_json())
+        except ValidationError as e:
+            return jsonify({"error_message": e.errors()}), 400
+        
+        name = user_data.name
+        calories = user_data.calories
+        protein = user_data.protein
+        carbs = user_data.carbs
+        fat = user_data.fat
+        serving_size = user_data.serving_size
+        serving_unit = user_data.serving_unit
+
         food_query = sa.Select(Food).where(and_(Food.name == name, Food.user_id == current_user_id))
+
         if db.session.scalar(food_query):
             return jsonify({"error_message": f"'{name}' already exists"}), 409
             # Perhaps now give option to edit the food item instead
@@ -152,8 +143,8 @@ def get_all_foods():
             carbs=carbs,
             fat=fat,
             serving_size=serving_size,
-            serving_unit=serving_unit_enum,
-            user_id=int(current_user_id)
+            serving_unit=serving_unit,
+            user_id=current_user_id
         )
 
         print("name:", new_food.name)
@@ -170,21 +161,9 @@ def get_all_foods():
             db.session.add(new_food)
             db.session.commit()
             print("WE HAVE FINISHED ADDING TO DB")
-            date_time = datetime.now()
-            formatted = date_time.isoformat()
+            date_time = datetime.now(timezone.utc).isoformat()
             print("Successfully created food")
-            return jsonify({
-                "id": new_food.id,
-                "name": new_food.name,
-                "calories": new_food.calories,
-                "protein": new_food.protein,
-                "carbs": new_food.carbs,
-                "fat": new_food.fat,
-                "serving_size": new_food.serving_size,
-                "serving_unit": new_food.serving_unit.value,
-                "user_id": new_food.user_id,
-                "created_at": formatted
-            }), 201
+            return jsonify(serialize_make_food(new_food, date_time)), 201
         except Exception as e:
             db.session.rollback()
             import traceback
@@ -207,18 +186,8 @@ def get_one_food(food_id):
                        or food_item.user_id is None)
         if not permissions:
             return jsonify({"error_message": "Permission denied"}), 403
-
-        food_info = {
-            "id": food_item.id,
-            "name": food_item.name,
-            "calories": food_item.calories,
-            "protein": food_item.protein,
-            "carbs": food_item.carbs,
-            "fat": food_item.fat,
-            "serving_size": food_item.serving_size,
-            "serving_unit": food_item.serving_unit.value
-        }
-        return jsonify(food_info), 200
+        
+        return jsonify(serialize_food(food_item)), 200
 
     if request.method == 'DELETE':  # Delete food item from user's database
         # Only want to be able to delete foods that have Food.userid == current_user_id
@@ -241,27 +210,22 @@ def get_one_food(food_id):
         # Update a food entry with newly provided user information (ONLY for Food.user_id == current_user_id)
         if food_item.user_id == current_user_id:
             try:
-                user_data = request.get_json()
-                food_item.name = user_data.get("name", food_item.name)
-                food_item.calories = user_data.get("calories", food_item.calories)
-                food_item.protein = user_data.get("protein", food_item.protein)
-                food_item.carbs = user_data.get("carbs", food_item.carbs)
-                food_item.fat = user_data.get("fat", food_item.fat)
-                food_item.serving_size = user_data.get("serving_size", food_item.serving_size)
-                food_item.serving_unit = user_data.get("serving_unit", food_item.serving_unit)
+                user_data = FoodCreateEdit(**request.get_json())
+                food_item.name = user_data.name
+                food_item.calories = user_data.calories
+                food_item.protein = user_data.protein
+                food_item.carbs = user_data.carbs
+                food_item.fat = user_data.fat
+                food_item.serving_size = user_data.serving_size
+                food_item.serving_unit = user_data.serving_unit
+                
+                #food_item.serving_unit = user_data.get("serving_unit", food_item.serving_unit)
 
                 db.session.commit()
 
-                return jsonify({
-                    "id": food_id,
-                    "name": food_item.name,
-                    "calories": food_item.calories,
-                    "protein": food_item.protein,
-                    "carbs": food_item.carbs,
-                    "fat": food_item.fat,
-                    "serving_size": food_item.serving_size,
-                    "serving_unit": str(food_item.serving_unit)
-                }), 200
+                return jsonify(serialize_food(food_item)), 200
+            except ValidationError as e:
+                return jsonify({"error_message": e.errors()}), 400
             except Exception:
                 db.session.rollback()
                 return jsonify({"error_message": "Unexpected error occurred"}), 500
@@ -270,12 +234,14 @@ def get_one_food(food_id):
 
 
 @app.route('/api/profile', methods=["PATCH"])
+@jwt_required()
 def update_user():
     user_data = request.get_json()
     print(f"receieved: {user_data}")
     username = user_data["username"]
     password = user_data["password"]  # NOTE: have not implemented hashing yet!!!!
-    email = user_data["email"]
+    email_front_end = user_data["email"]
+    email = email_front_end.lower()
     age = user_data.get("age")
     weight = user_data.get("weight")
     goal = user_data.get("goal")
