@@ -49,7 +49,7 @@ class User(db.Model):
 class Food(db.Model):
     __tablename__ = "Foods"
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
-    name: so.Mapped[str] = so.mapped_column(sa.String(64), index=True, unique=True, nullable=False)
+    name: so.Mapped[str] = so.mapped_column(sa.String(64), index=True, nullable=False)
     calories: so.Mapped[int] = so.mapped_column(nullable=False)
     protein: so.Mapped[int] = so.mapped_column(nullable=True)
     carbs: so.Mapped[int] = so.mapped_column(nullable=True)
@@ -67,7 +67,7 @@ class Food(db.Model):
 class Meal(db.Model):
     __tablename__ = "Meals"
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
-    name: so.Mapped[str] = so.mapped_column(sa.String(128), unique=True, index=True, nullable=False)
+    name: so.Mapped[str] = so.mapped_column(sa.String(128), index=True, nullable=False)
     saved: so.Mapped[bool] = so.mapped_column(nullable=True, default=False)
 
     user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey("Users.id"), nullable=False)  # Meal must be created by a user

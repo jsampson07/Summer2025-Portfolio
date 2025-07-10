@@ -73,7 +73,8 @@ def query_seed():
 
     food_query = sa.select(Food)
     foods = db.session.scalars(food_query).all()
-    print(f"Foods: {foods}")
+    for food in foods:
+        print(f"Food: {food.id}, Name: {food.name}, User_Owner: {food.user_id}")
 
     meal_query = sa.select(Meal)
     meals = db.session.scalars(meal_query).all()

@@ -1,17 +1,16 @@
 # Define routes and handlers for the endpoints
 from flask_macro_app import app, db
-from flask_macro_app.models import User, Food
+from flask_macro_app.models import User, Food, ServingUnit, GoalEnum
 from flask import jsonify, request, Flask
 from typing import List, Dict, Any
 import sqlalchemy as sa
-from sa import or_, and_
+from sqlalchemy import or_, and_
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 
 from flask_jwt_extended import create_access_token
 from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import jwt_required
-from flask_jwt_extended import JWTManager
 
 
 @app.route('/api/login', methods=['POST'])
@@ -22,7 +21,8 @@ def login():
     Format: {
         "username": ..., (OPTIONAL)
         "password": ..., (REQUIRED)
-    }    """
+    }
+    """
     user_data = request.get_json()
     if (not user_data) or (not all(key in user_data for key in ['username', 'password'])):
         return jsonify({"error_message": "Missing required fields: username, password"}), 400
@@ -31,11 +31,11 @@ def login():
     user_lookup = db.session.scalar(sa.Select(User).where(User.username == username))
     if (not user_lookup) or (not user_lookup.check_password(password)):
         return jsonify({"error_message": "Invalid username or password"}), 401
-    access_tok = create_access_token(identity=user_lookup.id)
+    access_tok = create_access_token(identity=str(user_lookup.id))
     return jsonify(access_token=access_tok)
 
 @app.route('/api/register', methods=['POST'])
-def create_user():
+def register():
     user_data = request.get_json()
     if (not user_data) or (not all(key in user_data for key in ['username', 'password', 'email'])):
         return jsonify({"error_message": "Missing required fields: username, password, email"}), 400
@@ -45,9 +45,9 @@ def create_user():
     username = user_data["username"]
     password = user_data["password"]  # NOTE: have not implemented hashing yet!!!!
     email = user_data["email"]
-    age = user_data.get("age")
-    weight = user_data.get("weight")
-    goal = user_data.get("goal")
+    age = user_data.get("age", None)
+    weight = user_data.get("weight", None)
+    goal = user_data.get("goal", None)
 
     user_query = sa.Select(User).where(User.username == username)
     email_query = sa.Select(User).where(User.email == email)
@@ -68,7 +68,8 @@ def create_user():
     try:
         db.session.add(new_user)
         db.session.commit()
-        date_time = datetime.datetime.now()
+        print("WE HAVE MADE IT HERE !!!!!!!!!!!")
+        date_time = datetime.now()
         formatted = date_time.isoformat()
         print("Successfully created user!")
         return jsonify({
@@ -83,8 +84,9 @@ def create_user():
     except IntegrityError as e:
         db.session.rollback()
         return jsonify({"error_message": "Username or email already exists"}), 400
-    except:
+    except Exception as e:
         db.session.rollback()
+        print(f"An unexpected error occurred: {e}")
         return jsonify({"error_message": "Could not add you as a user. Please try again."}), 500
 
 
@@ -92,7 +94,7 @@ def create_user():
 @app.route('/api/foods', methods=['GET', 'POST'])
 @jwt_required()
 def get_all_foods():
-    current_user_id = get_jwt_identity()
+    current_user_id = int(get_jwt_identity())  # Returns string MUST CAST
 
     if request.method == 'GET':  # Retrieve list of all foods that user can access
 
@@ -122,9 +124,9 @@ def get_all_foods():
 
     if request.method == 'POST':  # Create a new food item for user
         user_data = request.get_json()
-        if (not user_data) or (not any(key in user_data for key in
+        if (not user_data) or (not all(key in user_data for key in
                                        ['name', 'calories', 'serving_size', 'serving_unit'])):
-            return jsonify({"error_message": "Missing required fields: name, calories"
+            return jsonify({"error_message": "Missing required fields: name, calories, "
             "serving_size, serving_unit"}), 400
         name = user_data.get("name")
         calories = user_data.get("calories")
@@ -134,6 +136,10 @@ def get_all_foods():
         serving_size = user_data.get("serving_size")
         serving_unit = user_data.get("serving_unit")
 
+        try:
+            serving_unit_enum = ServingUnit(serving_unit.lower())  # calls by value
+        except ValueError:
+            return jsonify({"error_message": f"'{serving_unit}' is an invalid serving unit"}), 400
         food_query = sa.Select(Food).where(and_(Food.name == name, Food.user_id == current_user_id))
         if db.session.scalar(food_query):
             return jsonify({"error_message": f"'{name}' already exists"}), 409
@@ -146,14 +152,25 @@ def get_all_foods():
             carbs=carbs,
             fat=fat,
             serving_size=serving_size,
-            serving_unit=serving_unit,
-            user_id=current_user_id
+            serving_unit=serving_unit_enum,
+            user_id=int(current_user_id)
         )
 
+        print("name:", new_food.name)
+        print("calories:", new_food.calories)
+        print("protein:", new_food.protein)
+        print("carbs:", new_food.carbs)
+        print("fat:", new_food.fat)
+        print("serving_size:", new_food.serving_size)
+        print("serving_unit_enum:", new_food.serving_unit)
+        print("user_id:", new_food.user_id)
+
         try:
+            print("WE HAVE ENTERED HERE!!!!")
             db.session.add(new_food)
             db.session.commit()
-            date_time = datetime.datetime.now()
+            print("WE HAVE FINISHED ADDING TO DB")
+            date_time = datetime.now()
             formatted = date_time.isoformat()
             print("Successfully created food")
             return jsonify({
@@ -164,20 +181,24 @@ def get_all_foods():
                 "carbs": new_food.carbs,
                 "fat": new_food.fat,
                 "serving_size": new_food.serving_size,
-                "serving_unit": new_food.serving_unit,
+                "serving_unit": new_food.serving_unit.value,
                 "user_id": new_food.user_id,
                 "created_at": formatted
             }), 201
-        except Exception:
+        except Exception as e:
             db.session.rollback()
+            import traceback
+            print("Exception during DB commit: ", e)
+            traceback.print_exc()
             return jsonify({"error_message": "Unexpected error occurred"}), 500
 
 
 @app.route('/api/foods/<int:food_id>', methods=['GET', 'PATCH', 'DELETE'])
 @jwt_required()
 def get_one_food(food_id):
-    current_user_id = get_jwt_identity()
+    current_user_id = int(get_jwt_identity())
     food_item = db.session.get(Food, food_id)  # Use across all methods
+    print(food_item)
     if not food_item:
         return jsonify({"error_message": "Food not found"}), 404
 
@@ -195,7 +216,7 @@ def get_one_food(food_id):
             "carbs": food_item.carbs,
             "fat": food_item.fat,
             "serving_size": food_item.serving_size,
-            "serving_unit": str(food_item.serving_unit)
+            "serving_unit": food_item.serving_unit.value
         }
         return jsonify(food_info), 200
 
@@ -203,6 +224,8 @@ def get_one_food(food_id):
         # Only want to be able to delete foods that have Food.userid == current_user_id
         #query = sa.Select(Food).where(Food.id == food_id and Food.user_id == current_user_id)
         #food_to_delete = db.session.scalar(query)
+        print(food_item.user_id)
+        print(current_user_id)
         if food_item.user_id == current_user_id:  # We have permission
             try:
                 db.session.delete(food_item)
