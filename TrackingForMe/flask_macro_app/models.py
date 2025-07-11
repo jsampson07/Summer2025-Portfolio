@@ -6,7 +6,7 @@ import sqlalchemy.orm as so  # Used for functions and types that are part of the
 import enum
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from pydantic import BaseModel, ConfigDict, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr
 
 class GoalEnum(enum.Enum):
     BULK = "bulk"
@@ -20,10 +20,6 @@ class ServingUnit(enum.Enum):
     ML = "ml"
     CUP = "cup"
     UNIT = "unit"
-
-meal_items = db.Table("meal_items", db.Column("meal_id", db.Integer, db.ForeignKey("Meals.id"), primary_key=True),
-                    db.Column("food_id", db.Integer, db.ForeignKey("Foods.id"), primary_key=True),
-                    db.Column("quantity", db.Numeric(10,2)))
 
 class RegisterInput(BaseModel):
     username: str = Field(..., min_length=6, max_length=64)
@@ -82,7 +78,7 @@ class Food(db.Model):
 
     user_id: so.Mapped[Optional[int]] = so.mapped_column(sa.ForeignKey("Users.id"), nullable=True)  # If food is in pre-existing catalog, no user id, else: userid of creator
 
-    meals: so.Mapped[list["Meal"]] = so.relationship(secondary=meal_items, back_populates="foods")
+    meal_items: so.Mapped[list["Meal_Food"]] = so.relationship(back_populates="food", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Food {self.name}>"
@@ -95,10 +91,23 @@ class Meal(db.Model):
 
     user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey("Users.id"), nullable=False)  # Meal must be created by a user
 
-    foods: so.Mapped[list["Food"]] = so.relationship(secondary=meal_items, back_populates="meals")
+    food_items: so.Mapped[list["Meal_Food"]] = so.relationship(back_populates="meal", cascade="all, delete-orphan")  # A meal has many foods
 
     def __repr__(self):
         return f"<Meal {self.name}>"
+
+class Meal_Food(db.Model):
+    __tablename__ = "Meal_Food"
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    food_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey("Foods.id"), nullable=False)
+    meal_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey("Meals.id"), nullable=False)
+    quantity: so.Mapped[float] = so.mapped_column(nullable=False)
+
+    food: so.Mapped["Food"] = so.relationship(back_populates="meal_items")
+    meal: so.Mapped["Meal"] = so.relationship(back_populates="food_items")
+
+    def __repr__(self):
+        return f"<Meal_Food {self.food.name} {self.meal.name}>"
     
 class DailyLog(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
