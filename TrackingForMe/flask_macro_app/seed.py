@@ -1,6 +1,6 @@
 # Used for seeding the database and testing
 from flask_macro_app import app, db
-from flask_macro_app.models import User, Food, ServingUnit, GoalEnum, Meal
+from flask_macro_app.models import User, Food, ServingUnit, GoalEnum, Meal, Meal_Food
 import sqlalchemy as sa
 import click
 
@@ -97,10 +97,12 @@ def query_seed():
     meals = db.session.scalars(meal_query).all()
     print(f"Meals: {meals}")
 
-    first_meal_query = sa.select(Meal.id).order_by(Meal.id).limit(1).scalar_subquery()
-    query = sa.select(Food).join(Meal.foods).where(Meal.id==first_meal_query)
-    meal_items = db.session.scalars(query).all()
-    for food in meal_items:
-        print(f"ID: {food.id}, Food: {food.name}, Calories: {food.calories}")
+    first_meal_query = sa.select(Meal).order_by(Meal.id).limit(1)
+    meal_to_list = db.session.scalar(first_meal_query)  # Returns meal object
+    if meal_to_list:
+        foods_of_meal = meal_to_list.food_items
+        for food in foods_of_meal:
+            print(food)
+            print(f"ID: {food.id}, Food: {food.name}, Calories: {food.calories}")
 
     print("Done printing database")

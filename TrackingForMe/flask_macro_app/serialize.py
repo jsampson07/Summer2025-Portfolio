@@ -38,3 +38,8 @@ def serialize_make_food(food: Food, created_at: str):
         "serving_unit": food.serving_unit.value,
         "created_at": created_at
     }
+
+def serialize_meal(meal: Meal, created_at: str):
+    return {
+        "id": meal.id
+    }

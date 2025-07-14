@@ -1,6 +1,6 @@
 # Define routes and handlers for the endpoints
 from flask_macro_app import app, db
-from flask_macro_app.models import User, Food, ServingUnit, GoalEnum, RegisterInput, LoginInput, FoodCreateEdit
+from flask_macro_app.models import User, Food, ServingUnit, GoalEnum, RegisterInput, LoginInput, FoodCreateEdit, MealCreate, Meal
 from flask import jsonify, request, Flask
 from typing import List, Dict, Any
 import sqlalchemy as sa
@@ -18,7 +18,7 @@ import os
 
 from pydantic import ValidationError
 
-from flask_macro_app.serialize import serialize_user, serialize_food, serialize_make_food
+from flask_macro_app.serialize import serialize_user, serialize_food, serialize_make_food, serialize_meal
 
 if not os.path.exists('logs'):
     os.mkdir('logs')
@@ -231,7 +231,35 @@ def get_one_food(food_id):
                 return jsonify({"error_message": "Unexpected error occurred"}), 500
         else:
             return jsonify({"error_message": "Permission denied"}), 403
+        
+@app.route('/api/meals', methods=['POST', 'GET'])
+@jwt_required()
+def create_get_meal():
+    current_user_id = int(get_jwt_identity())
+    if request.method == 'POST':
+        try:
+            user_meal = MealCreate(**request.get_json())
+        except ValidationError as e:
+            return jsonify({"error_message": e.errors()}), 400
+    if request.method == 'GET':
+        try:
+            meals_query = sa.select(Meal).where(Meal.user_id == current_user_id)
+            meals = db.session.scalars(meals_query).all()  # List of Meal Response objects
+        except Exception:
+            return "ERRRRRROOORRRRRR"
+        return [serialize_meal(meal) for meal in meals]
 
+@app.route('/api/meals/<int:meal_id>/foods', methods=['GET', 'POST', 'PATCH'])
+@jwt_required()
+def add_edit_meal():
+    # Either add a food to meal or edit existing foods of a meal or get list of foods in meal
+    return
+
+@app.route('/api/meals/<int:meal_id>', methods=['PUT', 'PATCH', 'DELETE'])
+@jwt_required()
+def up_rep_remove_meal():
+    # Either update, replace, or delete a meal
+    return
 
 @app.route('/api/profile', methods=["PATCH"])
 @jwt_required()

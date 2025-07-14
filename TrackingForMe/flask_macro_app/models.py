@@ -83,6 +83,9 @@ class Food(db.Model):
     def __repr__(self):
         return f"<Food {self.name}>"
     
+class MealCreate(BaseModel):
+    name: str = Field(..., min_length=2, max_length=64)
+    
 class Meal(db.Model):
     __tablename__ = "Meals"
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
