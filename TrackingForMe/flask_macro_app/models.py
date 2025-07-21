@@ -62,7 +62,7 @@ class FoodCreateEdit(BaseModel):
     protein: Optional[int] = Field(default=0, ge=0)
     carbs: Optional[int] = Field(default=0, ge=0)
     fat: Optional[int] = Field(default=0, ge=0)
-    serving_size: int = Field(..., gt=0)
+    serving_size: float = Field(..., gt=0)
     serving_unit: ServingUnit = Field(...)
     
 class Food(db.Model):
@@ -82,9 +82,6 @@ class Food(db.Model):
 
     def __repr__(self):
         return f"<Food {self.name}>"
-    
-class MealCreate(BaseModel):
-    name: str = Field(..., min_length=2, max_length=64)
     
 class Meal(db.Model):
     __tablename__ = "Meals"
@@ -111,6 +108,15 @@ class Meal_Food(db.Model):
 
     def __repr__(self):
         return f"<Meal_Food {self.food.name} {self.meal.name}>"
+    
+class MealFoodInput(BaseModel):
+    food_id: int = Field(...)
+    quantity: float = Field(..., gt=0)
+    
+class MealCreate(BaseModel):
+    name: str = Field(..., min_length=2, max_length=64)
+    saved: bool = Field(default=False)
+    food_items: list[MealFoodInput] = Field(..., min_length=1)
     
 class DailyLog(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
