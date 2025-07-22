@@ -291,10 +291,10 @@ def add_edit_meal(meal_id):
     meal = db.session.get(Meal, meal_id)
     if not meal:
         return jsonify({"error_message": "Meal not found"}), 404
-    data = request.get_json()
-    if "quantity" not in data:
-        return jsonify({"error_message": "Missing required field"}), 422
     if request.method == 'POST':
+        data = request.get_json()
+        if "quantity" not in data:
+            return jsonify({"error_message": "Missing required field"}), 422
         if "food_id" in data:  # format: {"food_id": ..., "quantity": ...}
             food = db.session.get(Food, data["food_id"])
             if not food:
@@ -336,6 +336,9 @@ def add_edit_meal(meal_id):
         except Exception:
             db.session.rollback()
             return jsonify({"error_message": "Unexpected error occurred"}), 500
+    
+    if request.method == 'GET':
+
 
 @app.route('/api/meals/<int:meal_id>', methods=['PUT', 'PATCH', 'DELETE'])
 @jwt_required()
