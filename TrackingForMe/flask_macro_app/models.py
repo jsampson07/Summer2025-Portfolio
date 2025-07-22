@@ -6,7 +6,7 @@ import sqlalchemy.orm as so  # Used for functions and types that are part of the
 import enum
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, Extra
 
 class GoalEnum(enum.Enum):
     BULK = "bulk"
@@ -64,6 +64,9 @@ class FoodCreateEdit(BaseModel):
     fat: Optional[int] = Field(default=0, ge=0)
     serving_size: float = Field(..., gt=0)
     serving_unit: ServingUnit = Field(...)
+
+    class Config:
+        extra = Extra.ignore
     
 class Food(db.Model):
     __tablename__ = "Foods"
@@ -112,9 +115,12 @@ class Meal_Food(db.Model):
 class MealFoodInput(BaseModel):
     food_id: int = Field(...)
     quantity: float = Field(..., gt=0)
+
+    class Config:
+        extra = Extra.ignore
     
 class MealCreate(BaseModel):
-    name: str = Field(..., min_length=2, max_length=64)
+    name: str = Field(..., min_length=2, max_length=128)
     saved: bool = Field(default=False)
     food_items: list[MealFoodInput] = Field(..., min_length=1)
     

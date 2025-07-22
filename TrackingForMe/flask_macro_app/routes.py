@@ -1,6 +1,6 @@
 # Define routes and handlers for the endpoints
 from flask_macro_app import app, db
-from flask_macro_app.models import User, Food, ServingUnit, GoalEnum, RegisterInput, LoginInput, FoodCreateEdit, MealCreate, Meal
+from flask_macro_app.models import User, Food, ServingUnit, GoalEnum, RegisterInput, LoginInput, FoodCreateEdit, MealCreate, Meal, Meal_Food, MealFoodInput
 from flask import jsonify, request, Flask
 from typing import List, Dict, Any
 import sqlalchemy as sa
@@ -18,7 +18,7 @@ import os
 
 from pydantic import ValidationError
 
-from flask_macro_app.serialize import serialize_user, serialize_food, serialize_make_food, serialize_meal
+from flask_macro_app.serialize import serialize_user, serialize_food, serialize_make_food, serialize_meal_create, serialize_meal, serialize_meal_edit
 
 if not os.path.exists('logs'):
     os.mkdir('logs')
@@ -241,25 +241,119 @@ def create_get_meal():
             user_meal = MealCreate(**request.get_json())
         except ValidationError as e:
             return jsonify({"error_message": e.errors()}), 400
+        meal_name = user_meal.name
+        query = sa.Select(Meal).where(and_(meal_name == Meal.name, Meal.user_id == current_user_id))
+        result = db.session.scalar(query)
+        if result:
+            return jsonify({"error_message": f"'{meal_name}' already exists"}), 409
+        is_saved = user_meal.saved
+        meal_items = user_meal.food_items
+        meal_food_list = []
+        for meal_food in meal_items:
+            food = db.session.get(Food, meal_food.food_id)
+            if not food:
+                return jsonify({"error_message": f"Food with id {meal_food.food_id} not found"}), 404
+            if food.user_id != current_user_id or food.user_id is None:
+                return jsonify({"error_message": "Permission denied"}), 403
+            new_meal_food = Meal_Food(
+                food_id=meal_food.food_id,
+                quantity=meal_food.quantity
+            )
+            meal_food_list.append(new_meal_food)
+        new_meal = Meal(
+            name=meal_name,
+            saved=is_saved,
+            user_id=current_user_id,
+            food_items=meal_food_list
+        )
+        try:
+            date_time = datetime.now(timezone.utc).isoformat()
+            db.session.add(new_meal)
+            db.session.commit()
+            return jsonify(serialize_meal_create(new_meal, date_time)), 201
+        except Exception:
+            db.session.rollback()
+            return jsonify({"error_message": "Unexpected error occurred"}), 500
+
     if request.method == 'GET':
         try:
             meals_query = sa.select(Meal).where(Meal.user_id == current_user_id)
             meals = db.session.scalars(meals_query).all()  # List of Meal Response objects
+            return [serialize_meal(meal) for meal in meals]
         except Exception:
-            return "ERRRRRROOORRRRRR"
-        return [serialize_meal(meal) for meal in meals]
+            return jsonify({"error_message": "Unexpected error occurred"}), 500
 
 @app.route('/api/meals/<int:meal_id>/foods', methods=['GET', 'POST', 'PATCH'])
 @jwt_required()
-def add_edit_meal():
+def add_edit_meal(meal_id):
     # Either add a food to meal or edit existing foods of a meal or get list of foods in meal
-    return
+    current_user_id = int(get_jwt_identity())
+    meal = db.session.get(Meal, meal_id)
+    if not meal:
+        return jsonify({"error_message": "Meal not found"}), 404
+    data = request.get_json()
+    if "quantity" not in data:
+        return jsonify({"error_message": "Missing required field"}), 422
+    if request.method == 'POST':
+        if "food_id" in data:  # format: {"food_id": ..., "quantity": ...}
+            food = db.session.get(Food, data["food_id"])
+            if not food:
+                return jsonify({"error_message": f"Food with id {data["food_id"]} not found"}), 404
+            try:
+                user_new_food = MealFoodInput(**request.get_json())
+            except ValidationError as e:
+                return jsonify({"error_message": e.errors()}), 400
+        elif "name" in data:  # format: just like creating a new food
+            try:
+                user_new_food = FoodCreateEdit(**request.get_json())
+            except ValidationError as e:
+                return jsonify({"error_message": e.errors()}), 400
+            food = Food (
+                name=user_new_food.name,
+                calories=user_new_food.calories,
+                protein=user_new_food.protein,
+                carbs=user_new_food.carbs,
+                fat=user_new_food.fat,
+                serving_size=user_new_food.serving_size,
+                serving_unit=user_new_food.serving_unit
+            )
+            db.session.add(food)
+            db.session.flush()
+        else:
+            return jsonify({"error_message": "Must provide either food_id or food objects"}), 400
+        
+        quantity = data["quantity"]
+        meal_food = Meal_Food(
+            meal_id=meal.id,
+            food_id=food.id,
+            quantity=quantity
+        )
+        try:
+            updated_at = datetime.now(timezone.utc).isoformat()
+            db.session.add(meal_food)
+            db.session.commit()
+            return jsonify(serialize_meal_edit(meal, updated_at)), 201
+        except Exception:
+            db.session.rollback()
+            return jsonify({"error_message": "Unexpected error occurred"}), 500
 
 @app.route('/api/meals/<int:meal_id>', methods=['PUT', 'PATCH', 'DELETE'])
 @jwt_required()
-def up_rep_remove_meal():
+def up_rep_remove_meal(meal_id):
     # Either update, replace, or delete a meal
-    return
+    current_user_id = int(get_jwt_identity())
+    meal = db.session.get(Meal, meal_id)
+    if request.method == 'DELETE':
+        if meal.user_id == current_user_id:
+            try:
+                db.session.delete(meal)
+                db.session.commit()
+                return '', 204
+            except Exception:
+                db.session.rollback()
+                return jsonify({"error_message": "Unexpected error occurred"}), 500
+        else:
+            return jsonify({"error_message": "Permission denied"}), 403
 
 @app.route('/api/profile', methods=["PATCH"])
 @jwt_required()
