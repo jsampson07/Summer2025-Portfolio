@@ -42,4 +42,4 @@ This repository is meant to:
 - Serve as a transparent log of both accomplishments and challenges.
 - Inspire others to pursue self-directed learning through structured, project-driven exploration.
   
-Thanks for stopping by! Feel free to explore the project directories or [Email me](mailto:jsampson35@gatech.edu) with questions or feedback.
+Thanks for stopping by! Feel free to explore the project directories or [email me](mailto:jsampson35@gatech.edu) with questions or feedback.
