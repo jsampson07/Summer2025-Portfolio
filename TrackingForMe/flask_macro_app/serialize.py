@@ -45,10 +45,10 @@ def serialize_meal_create(meal: Meal, created_at: str):
     total_carbs = 0
     total_fat = 0
     for meal_food in meal.food_items:
-        total_calories+=meal_food.food.calories
-        total_protein+=meal_food.food.protein
-        total_carbs+=meal_food.food.carbs
-        total_fat+=meal_food.food.fat
+        total_calories+=(meal_food.food.calories*meal_food.quantity)
+        total_protein+=(meal_food.food.protein*meal_food.quantity)
+        total_carbs+=(meal_food.food.carbs*meal_food.quantity)
+        total_fat+=(meal_food.food.fat*meal_food.quantity)
     return {
         "id": meal.id,
         "name": meal.name,
@@ -73,10 +73,10 @@ def serialize_meal_edit(meal: Meal, updated_at: str):
     total_carbs = 0
     total_fat = 0
     for meal_food in meal.food_items:
-        total_calories+=meal_food.food.calories
-        total_protein+=meal_food.food.protein
-        total_carbs+=meal_food.food.carbs
-        total_fat+=meal_food.food.fat
+        total_calories+=(meal_food.food.calories*meal_food.quantity)
+        total_protein+=(meal_food.food.protein*meal_food.quantity)
+        total_carbs+=(meal_food.food.carbs*meal_food.quantity)
+        total_fat+=(meal_food.food.fat*meal_food.quantity)
     return {
         "id": meal.id,
         "name": meal.name,
@@ -98,7 +98,7 @@ def serialize_meal_edit(meal: Meal, updated_at: str):
 def serialize_meal(meal: Meal):
     total_calories = 0
     for meal_food in meal.food_items:
-        total_calories+=meal_food.food.calories
+        total_calories+=(meal_food.food.calories*meal_food.quantity)
     return {
         "id": meal.id,
         "name": meal.name,

@@ -271,15 +271,18 @@ def create_get_meal():
             db.session.add(new_meal)
             db.session.commit()
             return jsonify(serialize_meal_create(new_meal, date_time)), 201
-        except Exception:
+        except Exception as e:
             db.session.rollback()
+            import traceback
+            print("Exception during DB commit: ", e)
+            traceback.print_exc()
             return jsonify({"error_message": "Unexpected error occurred"}), 500
 
     if request.method == 'GET':
         try:
             meals_query = sa.select(Meal).where(Meal.user_id == current_user_id)
             meals = db.session.scalars(meals_query).all()  # List of Meal Response objects
-            return [serialize_meal(meal) for meal in meals]
+            return [serialize_meal(meal) for meal in meals], 200
         except Exception:
             return jsonify({"error_message": "Unexpected error occurred"}), 500
 
@@ -288,7 +291,9 @@ def create_get_meal():
 def add_edit_meal(meal_id):
     # Either add a food to meal or edit existing foods of a meal or get list of foods in meal
     current_user_id = int(get_jwt_identity())
+
     meal = db.session.get(Meal, meal_id)
+
     if not meal:
         return jsonify({"error_message": "Meal not found"}), 404
     if request.method == 'POST':
@@ -298,7 +303,7 @@ def add_edit_meal(meal_id):
         if "food_id" in data:  # format: {"food_id": ..., "quantity": ...}
             food = db.session.get(Food, data["food_id"])
             if not food:
-                return jsonify({"error_message": f"Food with id {data["food_id"]} not found"}), 404
+                return jsonify({"error_message": f"Food with id {data['food_id']} not found"}), 404
             try:
                 user_new_food = MealFoodInput(**request.get_json())
             except ValidationError as e:
@@ -337,7 +342,17 @@ def add_edit_meal(meal_id):
             db.session.rollback()
             return jsonify({"error_message": "Unexpected error occurred"}), 500
     
-    if request.method == 'GET':
+    if request.method == 'GET':  # List all foods of meal
+        if meal.user_id != current_user_id:
+            return jsonify({"error_message": "Permission denied"}), 403
+        try:
+            meal_items = meal.food_items
+            return jsonify([serialize_food(meal_food.food) for meal_food in meal_items]), 200
+        except Exception as e:
+            import traceback
+            print("Exception during DB commit: ", e)
+            traceback.print_exc()
+            return jsonify({"error_message": "Unexpected error occurred"}), 500
 
 
 @app.route('/api/meals/<int:meal_id>', methods=['PUT', 'PATCH', 'DELETE'])

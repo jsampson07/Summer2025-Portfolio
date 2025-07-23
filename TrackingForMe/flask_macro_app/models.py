@@ -22,7 +22,7 @@ class ServingUnit(enum.Enum):
     UNIT = "unit"
 
 class RegisterInput(BaseModel):
-    username: str = Field(..., min_length=6, max_length=64)
+    username: str = Field(..., min_length=4, max_length=64)
     password: str = Field(..., min_length=4)  # FOR TESTING ONLY !!! IN production = 14
     email: EmailStr = Field(..., max_length = 128)
     age: Optional[int] = Field(default=None, ge=0)
