@@ -427,22 +427,7 @@ def up_rep_remove_meal(meal_id):
             db.session.rollback()
             app.logger.exception("Exception during DB commit")
             return jsonify({"error_message": "Database commit failed"}), 500
-
-
-@limiter.limit("20 per minute")  # ???
-@app.route('/api/profile', methods=["PATCH"])
-@jwt_required()
-def update_user():
-    user_data = request.get_json()
-    app.logger.debug(f"receieved: {user_data}")
-    username = user_data["username"]
-    password = user_data["password"]  # NOTE: have not implemented hashing yet!!!!
-    email_front_end = user_data["email"]
-    email = email_front_end.lower()
-    age = user_data.get("age")
-    weight = user_data.get("weight")
-    goal = user_data.get("goal")
-    return
+        
 
 @app.route('/')
 def test():
