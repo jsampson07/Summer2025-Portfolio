@@ -104,3 +104,10 @@ def serialize_meal(meal: Meal):
         "name": meal.name,
         "total_calories": total_calories
     }
+
+def serialize_meal_patch(meal_food: Meal_Food, updated_at: str):
+    return {
+        "food_id": meal_food.food_id,
+        "food_name": meal_food.food.name,
+        "quantity": meal_food.quantity
+    }

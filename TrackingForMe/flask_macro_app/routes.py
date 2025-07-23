@@ -1,6 +1,6 @@
 # Define routes and handlers for the endpoints
 from flask_macro_app import app, db
-from flask_macro_app.models import User, Food, ServingUnit, GoalEnum, RegisterInput, LoginInput, FoodCreateEdit, MealCreate, Meal, Meal_Food, MealFoodInput
+from flask_macro_app.models import User, Food, ServingUnit, GoalEnum, RegisterInput, LoginInput, FoodCreateEdit, MealCreate, Meal, Meal_Food, MealFoodInput, MealPatch
 from flask import jsonify, request, Flask
 from typing import List, Dict, Any
 import sqlalchemy as sa
@@ -12,13 +12,19 @@ from flask_jwt_extended import create_access_token
 from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import jwt_required
 
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
+limiter = Limiter(get_remote_address, app=app)
+
 import logging
 from logging.handlers import RotatingFileHandler
 import os
+import traceback
 
 from pydantic import ValidationError
 
-from flask_macro_app.serialize import serialize_user, serialize_food, serialize_make_food, serialize_meal_create, serialize_meal, serialize_meal_edit
+from flask_macro_app.serialize import serialize_user, serialize_food, serialize_make_food, serialize_meal_create, serialize_meal, serialize_meal_edit, serialize_meal_patch
 
 if not os.path.exists('logs'):
     os.mkdir('logs')
@@ -34,6 +40,7 @@ app.logger.setLevel(logging.INFO)
 app.logger.info("Running application...")
 
 
+@limiter.limit("5 per minute")
 @app.route('/api/login', methods=['POST'])
 def login():
     # After a successful login, this route should return a JWT (JSON Web Token). Once that's working,
@@ -50,17 +57,17 @@ def login():
     access_tok = create_access_token(identity=str(user_lookup.id))
     return jsonify(access_token=access_tok)
 
+@limiter.limit("5 per minute")
 @app.route('/api/register', methods=['POST'])
 def register():
     try:
         user_data = RegisterInput(**request.get_json())
     except ValidationError as e:
         return jsonify({"error_message": e.errors()}), 400
-    print("Creating user...")
+    app.logger.info("Creating user...")
 
-    #REMEMBER --> EVERYTHING IS SENT VIA JSON FORMAT inside the crafted requests and response bodies
     username = user_data.username
-    password = user_data.password  # NOTE: have not implemented hashing yet!!!!
+    password = user_data.password
     email_front_end = user_data.email
     email = email_front_end.lower()
     age = user_data.age
@@ -93,11 +100,12 @@ def register():
         return jsonify({"error_message": "Username or email already exists"}), 400
     except Exception as e:
         db.session.rollback()
-        print(f"An unexpected error occurred: {e}")
-        return jsonify({"error_message": "Could not add you as a user. Please try again."}), 500
+        app.logger.exception("Exception during DB commit")
+        return jsonify({"error_message": "Database commit failed"}), 500
 
 
 #Get all foods for the logged-in user
+@limiter.limit("20 per minute")
 @app.route('/api/foods', methods=['GET', 'POST'])
 @jwt_required()
 def get_all_foods():
@@ -147,37 +155,36 @@ def get_all_foods():
             user_id=current_user_id
         )
 
-        print("name:", new_food.name)
-        print("calories:", new_food.calories)
-        print("protein:", new_food.protein)
-        print("carbs:", new_food.carbs)
-        print("fat:", new_food.fat)
-        print("serving_size:", new_food.serving_size)
-        print("serving_unit_enum:", new_food.serving_unit)
-        print("user_id:", new_food.user_id)
+        app.logger.info("name:", new_food.name)
+        app.logger.info("calories:", new_food.calories)
+        app.logger.info("protein:", new_food.protein)
+        app.logger.info("carbs:", new_food.carbs)
+        app.logger.info("fat:", new_food.fat)
+        app.logger.info("serving_size:", new_food.serving_size)
+        app.logger.info("serving_unit_enum:", new_food.serving_unit)
+        app.logger.debug("user_id:", new_food.user_id)
 
         try:
-            print("WE HAVE ENTERED HERE!!!!")
+            app.logger.info("WE HAVE ENTERED HERE!!!!")
             db.session.add(new_food)
             db.session.commit()
-            print("WE HAVE FINISHED ADDING TO DB")
+            app.logger.info("WE HAVE FINISHED ADDING TO DB")
             date_time = datetime.now(timezone.utc).isoformat()
-            print("Successfully created food")
+            app.logger.info("Successfully created food")
             return jsonify(serialize_make_food(new_food, date_time)), 201
         except Exception as e:
             db.session.rollback()
-            import traceback
-            print("Exception during DB commit: ", e)
-            traceback.print_exc()
-            return jsonify({"error_message": "Unexpected error occurred"}), 500
+            app.logger.exception("Exception during DB commit")
+            return jsonify({"error_message": "Database commit failed"}), 500
 
 
+@limiter.limit("100 per minute")
 @app.route('/api/foods/<int:food_id>', methods=['GET', 'PATCH', 'DELETE'])
 @jwt_required()
 def get_one_food(food_id):
     current_user_id = int(get_jwt_identity())
     food_item = db.session.get(Food, food_id)  # Use across all methods
-    print(food_item)
+    app.logger.info(food_item)
     if not food_item:
         return jsonify({"error_message": "Food not found"}), 404
 
@@ -190,19 +197,17 @@ def get_one_food(food_id):
         return jsonify(serialize_food(food_item)), 200
 
     if request.method == 'DELETE':  # Delete food item from user's database
-        # Only want to be able to delete foods that have Food.userid == current_user_id
-        #query = sa.Select(Food).where(Food.id == food_id and Food.user_id == current_user_id)
-        #food_to_delete = db.session.scalar(query)
-        print(food_item.user_id)
-        print(current_user_id)
+        app.logger.info(food_item.user_id)
+        app.logger.debug(current_user_id)
         if food_item.user_id == current_user_id:  # We have permission
             try:
                 db.session.delete(food_item)
                 db.session.commit()
                 return '', 204
-            except Exception:
+            except Exception as e:
                 db.session.rollback()
-                return jsonify({"error_message": "Unexpected error occurred"}), 500
+                app.logger.exception("Exception during DB commit")
+                return jsonify({"error_message": "Database commit failed"}), 500
         else:
             return jsonify({"error_message": "Permission denied"}), 403
         
@@ -226,12 +231,15 @@ def get_one_food(food_id):
                 return jsonify(serialize_food(food_item)), 200
             except ValidationError as e:
                 return jsonify({"error_message": e.errors()}), 400
-            except Exception:
+            except Exception as e:
                 db.session.rollback()
-                return jsonify({"error_message": "Unexpected error occurred"}), 500
+                app.logger.exception("Exception during DB commit")
+                return jsonify({"error_message": "Database commit failed"}), 500
         else:
             return jsonify({"error_message": "Permission denied"}), 403
         
+
+@limiter.limit("30 per minute")
 @app.route('/api/meals', methods=['POST', 'GET'])
 @jwt_required()
 def create_get_meal():
@@ -273,19 +281,20 @@ def create_get_meal():
             return jsonify(serialize_meal_create(new_meal, date_time)), 201
         except Exception as e:
             db.session.rollback()
-            import traceback
-            print("Exception during DB commit: ", e)
-            traceback.print_exc()
-            return jsonify({"error_message": "Unexpected error occurred"}), 500
+            app.logger.exception("Exception during DB commit")
+            return jsonify({"error_message": "Database commit failed"}), 500
 
     if request.method == 'GET':
         try:
             meals_query = sa.select(Meal).where(Meal.user_id == current_user_id)
             meals = db.session.scalars(meals_query).all()  # List of Meal Response objects
-            return [serialize_meal(meal) for meal in meals], 200
-        except Exception:
-            return jsonify({"error_message": "Unexpected error occurred"}), 500
+            return jsonify([serialize_meal(meal) for meal in meals]), 200
+        except Exception as e:
+            app.logger.exception("Exception during DB commit")
+            return jsonify({"error_message": "Could not retrieve information"}), 500
 
+
+@limiter.limit("50 per minute")
 @app.route('/api/meals/<int:meal_id>/foods', methods=['GET', 'POST', 'PATCH'])
 @jwt_required()
 def add_edit_meal(meal_id):
@@ -296,6 +305,9 @@ def add_edit_meal(meal_id):
 
     if not meal:
         return jsonify({"error_message": "Meal not found"}), 404
+    if meal.user_id != current_user_id:
+            return jsonify({"error_message": "Permission denied"}), 403
+    
     if request.method == 'POST':
         data = request.get_json()
         if "quantity" not in data:
@@ -338,29 +350,51 @@ def add_edit_meal(meal_id):
             db.session.add(meal_food)
             db.session.commit()
             return jsonify(serialize_meal_edit(meal, updated_at)), 201
-        except Exception:
+        except Exception as e:
             db.session.rollback()
-            return jsonify({"error_message": "Unexpected error occurred"}), 500
+            app.logger.exception("Exception during DB commit")
+            return jsonify({"error_message": "Database commit failed"}), 500
     
     if request.method == 'GET':  # List all foods of meal
-        if meal.user_id != current_user_id:
-            return jsonify({"error_message": "Permission denied"}), 403
         try:
             meal_items = meal.food_items
             return jsonify([serialize_food(meal_food.food) for meal_food in meal_items]), 200
         except Exception as e:
-            import traceback
-            print("Exception during DB commit: ", e)
-            traceback.print_exc()
-            return jsonify({"error_message": "Unexpected error occurred"}), 500
+            app.logger.exception("Exception during DB commit")
+            return jsonify({"error_message": "Could not retrieve information"}), 500
+    if request.method == 'PATCH':  # Modifying quantity ONLY
+        try:
+            user_data = MealFoodInput(**request.get_json())  # Expects {"food_id": ..., "quantity": ...}
+        except ValidationError as e:
+            return jsonify({"error_message": e.errors()}), 400
+        found = False
+        for meal_food in meal.food_items:
+            if meal_food.food_id == user_data.food_id:
+                modified = meal_food  # Used in successful response
+                meal_food.quantity = user_data.quantity
+                found = True
+                break
+        if not found:
+            return jsonify({"error_message": "Food item could not be found in the meal"}), 404
+        try:
+            db.session.commit()
+            updated_at = datetime.now(timezone.utc).isoformat()
+            return jsonify(serialize_meal_patch(modified, updated_at)), 200
+        except Exception:
+            db.session.rollback()
+            app.logger.exception("Exception during DB commit")
+            return jsonify({"error_message": "Database commit failed"}), 500
 
 
-@app.route('/api/meals/<int:meal_id>', methods=['PUT', 'PATCH', 'DELETE'])
+@limiter.limit("50 per minute")
+@app.route('/api/meals/<int:meal_id>', methods=['PATCH', 'DELETE'])
 @jwt_required()
 def up_rep_remove_meal(meal_id):
     # Either update, replace, or delete a meal
     current_user_id = int(get_jwt_identity())
     meal = db.session.get(Meal, meal_id)
+    if meal.user_id != current_user_id:
+        return jsonify({"error_message": "Permission denied"}), 403
     if request.method == 'DELETE':
         if meal.user_id == current_user_id:
             try:
@@ -369,15 +403,38 @@ def up_rep_remove_meal(meal_id):
                 return '', 204
             except Exception:
                 db.session.rollback()
-                return jsonify({"error_message": "Unexpected error occurred"}), 500
+                app.logger.exception("Exception during DB commit")
+                return jsonify({"error_message": "Database commit failed"}), 500
         else:
             return jsonify({"error_message": "Permission denied"}), 403
+    if request.method == 'PATCH':  # Only changes to 'meal name' or 'saved' attribute
+        try:
+            meal_update = MealPatch(**request.get_json())
+        except ValidationError as e:
+            return jsonify({"error_message": e.errors()}), 400
+        meal_name = meal_update.name
+        query = sa.Select(Meal).where(and_(meal_name == Meal.name, Meal.user_id == current_user_id))
+        result = db.session.scalar(query)
+        if result:
+            return jsonify({"error_message": f"'{meal_name}' already exists"}), 409
+        meal.name = meal_name
+        meal.saved = meal_update.saved
+        try:
+            db.session.commit()
+            updated_at = datetime.now(timezone.utc).isoformat()
+            return jsonify(serialize_meal_edit(meal, updated_at)), 200
+        except Exception:
+            db.session.rollback()
+            app.logger.exception("Exception during DB commit")
+            return jsonify({"error_message": "Database commit failed"}), 500
 
+
+@limiter.limit("20 per minute")  # ???
 @app.route('/api/profile', methods=["PATCH"])
 @jwt_required()
 def update_user():
     user_data = request.get_json()
-    print(f"receieved: {user_data}")
+    app.logger.debug(f"receieved: {user_data}")
     username = user_data["username"]
     password = user_data["password"]  # NOTE: have not implemented hashing yet!!!!
     email_front_end = user_data["email"]

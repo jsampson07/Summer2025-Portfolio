@@ -103,6 +103,6 @@ def query_seed():
         foods_of_meal = meal_to_list.food_items
         for food in foods_of_meal:
             print(food)
-            print(f"ID: {food.id}, Food: {food.name}, Calories: {food.calories}")
+            print(f"ID: {food.id}, Food: {food.food.name}, Food quantity: {food.quantity}, Calories: {food.food.calories}")
 
     print("Done printing database")

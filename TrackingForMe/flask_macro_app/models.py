@@ -30,7 +30,7 @@ class RegisterInput(BaseModel):
     goal: Optional[GoalEnum] = None
 
 class LoginInput(BaseModel):
-    username: str = Field(..., min_length=6, max_length=64)
+    username: str = Field(..., min_length=4, max_length=64)
     password: str = Field(..., min_length=4)
 
 class User(db.Model):
@@ -123,6 +123,10 @@ class MealCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=128)
     saved: bool = Field(default=False)
     food_items: list[MealFoodInput] = Field(..., min_length=1)
+
+class MealPatch(BaseModel):
+    name: str = Field(..., min_length=2, max_length=128)
+    saved: bool = Field(default=False)
     
 class DailyLog(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
