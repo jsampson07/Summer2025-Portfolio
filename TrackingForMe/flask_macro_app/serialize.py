@@ -45,10 +45,10 @@ def serialize_meal_create(meal: Meal, created_at: str):
     total_carbs = 0
     total_fat = 0
     for meal_food in meal.food_items:
-        total_calories+=(meal_food.food.calories*meal_food.quantity)
-        total_protein+=(meal_food.food.protein*meal_food.quantity)
-        total_carbs+=(meal_food.food.carbs*meal_food.quantity)
-        total_fat+=(meal_food.food.fat*meal_food.quantity)
+        total_calories+=(float(meal_food.food.calories)*float(meal_food.quantity))
+        total_protein+=(float(meal_food.food.protein)*(meal_food.quantity))
+        total_carbs+=(float(meal_food.food.carbs)*(meal_food.quantity))
+        total_fat+=(float(meal_food.food.fat)*(meal_food.quantity))
     return {
         "id": meal.id,
         "name": meal.name,
@@ -97,12 +97,27 @@ def serialize_meal_edit(meal: Meal, updated_at: str):
 
 def serialize_meal(meal: Meal):
     total_calories = 0
+    total_protein = 0
+    total_carbs = 0
+    total_fat = 0
     for meal_food in meal.food_items:
-        total_calories+=(meal_food.food.calories*meal_food.quantity)
+        food = meal_food.food
+        qty = meal_food.quantity
+        calories = food.calories or 0
+        protein = food.protein or 0
+        carbs = food.carbs or 0
+        fat = food.fat or 0
+        total_calories+=(calories*qty)
+        total_protein+=(protein*qty)
+        total_carbs+=(carbs*qty)
+        total_fat+=(fat*qty)
     return {
         "id": meal.id,
         "name": meal.name,
-        "total_calories": total_calories
+        "total_calories": total_calories,
+        "total_protein": total_protein,
+        "total_carbs": total_carbs,
+        "total_fat": total_fat
     }
 
 def serialize_meal_patch(meal_food: Meal_Food, updated_at: str):
@@ -111,3 +126,8 @@ def serialize_meal_patch(meal_food: Meal_Food, updated_at: str):
         "food_name": meal_food.food.name,
         "quantity": meal_food.quantity
     }
+
+def serialize_meal_food(meal_food: Meal_Food):
+    food_data = serialize_food(meal_food.food)
+    food_data["quantity"] = meal_food.quantity
+    return food_data

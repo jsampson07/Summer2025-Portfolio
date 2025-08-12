@@ -3,6 +3,7 @@ from flask_macro_app import app, db
 from flask_macro_app.models import User, Food, ServingUnit, GoalEnum, Meal, Meal_Food
 import sqlalchemy as sa
 import click
+from werkzeug.security import generate_password_hash
 
 food_staples_for_users = [
     {'name': "Chicken Breast", 'calories': 165, 'protein': 31, 'carbs': 0, 'fat': 4, 'serving_size': 100, 'serving_unit': ServingUnit.GRAMS},
@@ -25,15 +26,17 @@ food_staples_for_users = [
     {'name': "Whey Protein Powder", 'calories': 120, 'protein': 24, 'carbs': 3, 'fat': 1, 'serving_size': 1, 'serving_unit': ServingUnit.UNIT},
 ]
 
+
+
 @click.command("seed")
 def seed_database():
     """Seed the database with initial data."""
     db.drop_all()
     db.create_all()
 
-    user1 = User(username="jsamp7", password="wasd123", email="jsamp7@example.com",
+    user1 = User(username="jsamp7", password=generate_password_hash("wasd123"), email="jsamp7@example.com",
                  goal=GoalEnum.BULK)
-    user2 = User(username="testdummy", password="securepass", email="dummy@example.com",
+    user2 = User(username="testdummy", password=generate_password_hash("securepass"), email="dummy@example.com",
                  goal=GoalEnum.CASUAL)
     users = [user1, user2]
     db.session.add_all(users)
@@ -57,7 +60,15 @@ def seed_database():
     # How to add foods to the "foods" attribute of Meal ==> interact with the 'association table'
     query = sa.select(Food).where(Food.id.in_([1,2,3]))
     foods_for_meal = db.session.scalars(query).all()
-    meal1.foods.extend(foods_for_meal)
+
+    for food in foods_for_meal:
+        meal_food = Meal_Food(
+            food=food,
+            quantity=1
+        )
+        meal1.food_items.append(meal_food)
+
+    #meal1.food_items.extend(foods_for_meal)
     db.session.add(meal1)
     db.session.commit()
 
@@ -97,12 +108,13 @@ def query_seed():
     meals = db.session.scalars(meal_query).all()
     print(f"Meals: {meals}")
 
-    first_meal_query = sa.select(Meal).order_by(Meal.id).limit(1)
-    meal_to_list = db.session.scalar(first_meal_query)  # Returns meal object
+    first_meal_query = sa.select(Meal).order_by(Meal.id)
+    meal_to_list = db.session.scalars(first_meal_query)  # Returns meal object
     if meal_to_list:
-        foods_of_meal = meal_to_list.food_items
-        for food in foods_of_meal:
-            print(food)
-            print(f"ID: {food.id}, Food: {food.food.name}, Food quantity: {food.quantity}, Calories: {food.food.calories}")
+        for meal in meal_to_list:
+            foods_of_meal = meal.food_items
+            for food in foods_of_meal:
+                print(food)
+                print(f"ID: {food.id}, Food: {food.food.name}, Food quantity: {food.quantity}, Calories: {food.food.calories}")
 
     print("Done printing database")

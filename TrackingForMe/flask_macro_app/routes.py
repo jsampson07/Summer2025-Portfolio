@@ -24,7 +24,7 @@ import traceback
 
 from pydantic import ValidationError
 
-from flask_macro_app.serialize import serialize_user, serialize_food, serialize_make_food, serialize_meal_create, serialize_meal, serialize_meal_edit, serialize_meal_patch
+from flask_macro_app.serialize import serialize_user, serialize_food, serialize_make_food, serialize_meal_create, serialize_meal, serialize_meal_edit, serialize_meal_patch, serialize_meal_food
 
 if not os.path.exists('logs'):
     os.mkdir('logs')
@@ -261,7 +261,12 @@ def create_get_meal():
             food = db.session.get(Food, meal_food.food_id)
             if not food:
                 return jsonify({"error_message": f"Food with id {meal_food.food_id} not found"}), 404
-            if food.user_id != current_user_id or food.user_id is None:
+            if food.user_id != current_user_id and food.user_id is not None:
+                app.logger.debug(
+                    "Permission denied when adding food to meal: "
+                    "food_id=%s, food.user_id=%s, current_user_id=%s",
+                    food.id, food.user_id, current_user_id
+                )
                 return jsonify({"error_message": "Permission denied"}), 403
             new_meal_food = Meal_Food(
                 food_id=meal_food.food_id,
@@ -358,7 +363,7 @@ def add_edit_meal(meal_id):
     if request.method == 'GET':  # List all foods of meal
         try:
             meal_items = meal.food_items
-            return jsonify([serialize_food(meal_food.food) for meal_food in meal_items]), 200
+            return jsonify([serialize_meal_food(meal_food) for meal_food in meal_items]), 200
         except Exception as e:
             app.logger.exception("Exception during DB commit")
             return jsonify({"error_message": "Could not retrieve information"}), 500
@@ -393,6 +398,7 @@ def up_rep_remove_meal(meal_id):
     # Either update, replace, or delete a meal
     current_user_id = int(get_jwt_identity())
     meal = db.session.get(Meal, meal_id)
+    is_saved = meal.saved
     if meal.user_id != current_user_id:
         return jsonify({"error_message": "Permission denied"}), 403
     if request.method == 'DELETE':
@@ -413,7 +419,7 @@ def up_rep_remove_meal(meal_id):
         except ValidationError as e:
             return jsonify({"error_message": e.errors()}), 400
         meal_name = meal_update.name
-        query = sa.Select(Meal).where(and_(meal_name == Meal.name, Meal.user_id == current_user_id))
+        query = sa.Select(Meal).where(and_(meal_name == Meal.name, Meal.user_id == current_user_id, Meal.saved == is_saved, Meal.id != meal_id))
         result = db.session.scalar(query)
         if result:
             return jsonify({"error_message": f"'{meal_name}' already exists"}), 409
@@ -428,7 +434,7 @@ def up_rep_remove_meal(meal_id):
             app.logger.exception("Exception during DB commit")
             return jsonify({"error_message": "Database commit failed"}), 500
         
-
+        
 @app.route('/')
 def test():
     return "Welcome to TrackingForMe, a macro-nutrient tracker to help you stay on track with your nutrition goals!"
