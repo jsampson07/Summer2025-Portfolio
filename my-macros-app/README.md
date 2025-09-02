@@ -1,12 +1,40 @@
-# React + Vite
+# My Macros App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**A React-based front-end for the Macronutrient Tracker**
 
-Currently, two official plugins are available:
+This application serves as the user interface for the Macronutrient Tracker API, enabling users to log meals, view nutritional data, and monitor their dietary habits.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## Expanding the ESLint configuration
+## Features
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- **User Authentication**: Secure login and registration using JWT tokens.
+- **Meal Logging**: Add and display meals with associated nutritional information.
+- **Data Visualization**: View logged meals and basic nutritional data.
+
+---
+
+## Tech Stack
+
+- **Frontend**: React
+- **Styling**: CSS Modules
+
+---
+
+## Current Status
+
+This project is in active development. The front-end is integrated with the back-end API, allowing for meal logging and user authentication. However, the user interface is minimal and lacks advanced features.
+
+---
+
+## Setup Instructions
+
+```bash
+#Clone this repository
+git clone https://github.com/yourusername/my-macros-app.git
+
+#Install dependencies
+npm install
+
+#Start the development server
+npm run dev
