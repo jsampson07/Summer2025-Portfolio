@@ -16,16 +16,29 @@ Ping Sweeper Project
 
 Software Development Track
 
-In parallel with my cybersecurity work, I designed and developed a macronutrient calculator — a full-stack application to help users track their diet and understand their nutritional intake.
+In parallel with my cybersecurity work, I designed and developed a macronutrient calculator — a full-stack application to help users track their diet and understand their nutritional intake. I should note that this project is still a work in progress. At this stage, I have primarily focused on the back-end (Flask + SQLAlchemy), with some minimal front-end functionality in React.
 
-Macronutrient Tracker
+Currently working features:
 
-- Allows users to log meals and track daily and long-term macronutrient data.
-- Aggregates data to display trends and insights into eating habits.
-- I plan to continue expanding this project throughout the academic year with:
-  - Personalized recommendations based on age, weight, activity level, and nutritional science.
-  - Smart meal suggestions.
-  - Enhanced analytics and user customization features.
+- User authentication (login / signup with JWT)
+
+- Ability for a user to add meals and foods
+
+- Display of logged meals per user
+
+- Macronutrient data stored and accessible via API
+
+Features planned but not yet complete:
+
+- Expanded front-end UI/UX for meal management and analytics
+
+- Personalized nutrition recommendations (age, weight, activity-based)
+
+- Smart meal suggestions
+
+- Long-term trend visualization and enhanced analytics
+
+- Additional customization options
 
 Weekly Themes & Data Structures
 
