@@ -7,7 +7,7 @@ It’s designed as a practical, educational tool for network administrators and 
 
 ---
 
-## ✨ Features
+## Features
 - **ICMP Sweep**: Identifies hosts that respond to ICMP echo requests (ping).  
 - **TCP Fallback**: Attempts TCP connections on specified ports for hosts that fail to respond to ICMP, ensuring no live host is missed.  
 - **Service Fingerprinting**:
@@ -19,14 +19,14 @@ It’s designed as a practical, educational tool for network administrators and 
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 - **Language**: Python 3  
 - **Libraries**: `socket`, `ipaddress`, `argparse`, `requests`, `scapy`  
 - **Protocols**: ICMP, TCP/IP, HTTP/HTTPS, SSH  
 
 ---
 
-## 📖 Usage
+## Usage
 
 ### Setup
 ```bash
