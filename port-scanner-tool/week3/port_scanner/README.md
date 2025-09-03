@@ -35,10 +35,6 @@ It’s designed as a practical, educational tool for network administrators and 
 git clone https://github.com/jsampson07/Summer2025-Portfolio.git
 cd Summer2025-Portfolio/port-scanner-tool/week3/port-scanner
 
-#Install dependencies
-
-pip install -r requirements.txt
-
 #Run the scanner
 
 python3 port_scanner.py -s <subnet> -p <ports> -t <timeout> -v
